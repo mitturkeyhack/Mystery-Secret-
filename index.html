@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Kayıp Telefon</title>
+<link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+<div id="phone">
+  <canvas id="fx"></canvas>
+
+  <!-- ===== BAŞLIK ===== -->
+  <section id="s-title" class="scr show">
+    <div class="t-wrap">
+      <div class="t-logo" data-text="KAYIP TELEFON">KAYIP TELEFON</div>
+      <div class="t-sub">Karagöl yaylasında, çamurun içinde bir telefon buldun.<br>Sahibi 5 gündür kayıp.</div>
+      <button class="t-btn" id="bStart">TELEFONU AL</button>
+      <button class="t-btn ghost hidden" id="bContinue">TELEFONA DÖN</button>
+      <div class="t-hint">🎧 Kulaklık tak. Işıkları kapat. Yalnız oyna.</div>
+    </div>
+  </section>
+
+  <!-- ===== GİRİŞ SAHNESİ ===== -->
+  <section id="s-intro" class="scr">
+    <video id="introVid" playsinline muted preload="auto"></video>
+    <canvas id="introCv"></canvas>
+    <div class="caption" id="introCap"></div>
+    <button class="skip" id="bSkip">Atla ›</button>
+  </section>
+
+  <!-- ===== TELEFON EKRANI ===== -->
+  <section id="s-device" class="scr">
+    <div id="screen">
+      <div id="statusbar"><span id="sbTime">03:17</span><span class="sb-r"><span class="sig"><i></i><i></i><i class="off"></i><i class="off"></i></span><span id="sbBat" class="bat"><b></b></span><span id="sbPct">31%</span></span></div>
+
+      <!-- kilit ekranı -->
+      <div id="v-lock" class="view show">
+        <div class="wall" id="lockWall"></div>
+        <div class="lk-top">
+          <div class="lk-lock">🔒</div>
+          <div class="lk-time" id="lkTime">03:17</div>
+          <div class="lk-date" id="lkDate">Pazar, 10 Kasım</div>
+          <div class="lk-widget">Dedemle 🤍</div>
+        </div>
+        <div class="notifs" id="notifs"></div>
+        <div class="lk-bottom">
+          <button class="round" id="bFlash" title="El feneri">🔦</button>
+          <div class="swipe" id="swipeHint"><span>⌃</span>Açmak için yukarı kaydır</div>
+          <button class="round" id="bFlip" title="Telefonu çevir">⟲</button>
+        </div>
+        <button class="lk-emerg" id="bEmerg1">Acil Durum</button>
+      </div>
+
+      <!-- şifre -->
+      <div id="v-pin" class="view">
+        <div class="wall blur" id="pinWall"></div>
+        <div class="pin-box">
+          <div class="pin-title" id="pinTitle">Şifreyi Girin</div>
+          <div class="dots" id="dots"></div>
+          <div class="keys" id="keys"></div>
+          <div class="pin-foot">
+            <button id="bEmerg2">Acil Durum</button>
+            <button id="bForgot">Şifremi unuttum</button>
+            <button id="bPinBack">İptal</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- acil durum bilgisi -->
+      <div id="v-emerg" class="view light">
+        <div class="em-head"><button class="back" data-go="lock">‹ Geri</button><b>Tıbbi Kimlik</b><span></span></div>
+        <div class="em-card">
+          <div class="em-name"><div class="em-ava">D</div><div><b>Deniz Aydın</b><small>23 yaşında</small></div></div>
+          <dl>
+            <dt>Kan grubu</dt><dd>0 Rh+</dd>
+            <dt>Alerjiler</dt><dd>Penisilin</dd>
+            <dt>Acil durum kişisi</dt><dd>Annem — Gülay Aydın<br><span class="mut">0532 ••• •• 17</span></dd>
+            <dt>Notlar</dt><dd class="note">Telefonum kaybolursa şifrem, dünyada en çok sevdiğim insanın doğum günü <span class="mut">(GGAAYY)</span> 🙂<br><br>Bulan kişi lütfen anneme haber versin 🙏</dd>
+          </dl>
+        </div>
+        <button class="em-call" id="bEmCall">📞 112'yi ara</button>
+      </div>
+
+      <!-- güvenlik sorusu -->
+      <div id="v-question" class="view light">
+        <div class="em-head"><button class="back" data-go="pin">‹ Geri</button><b>Hesap kurtarma</b><span></span></div>
+        <div class="q-box">
+          <div class="q-ico">🛡️</div>
+          <p>Deniz Aydın hesabı için güvenlik sorusunu yanıtla.</p>
+          <label>İlk evcil hayvanınızın adı?</label>
+          <input id="qIn" autocomplete="off" placeholder="Yanıt">
+          <div class="q-err" id="qErr"></div>
+          <button class="q-ok" id="bQok">Doğrula</button>
+        </div>
+      </div>
+
+      <!-- arama -->
+      <div id="v-call" class="view">
+        <div class="call-bg"></div>
+        <div class="call-top"><div class="call-ava">?</div><div class="call-name">Bilinmeyen Numara</div><div class="call-sub" id="callSub">gelen arama…</div></div>
+        <div class="call-sub2" id="callCap"></div>
+        <div class="call-btns" id="callBtns">
+          <button class="cb red" id="bDecline">✕<small>Reddet</small></button>
+          <button class="cb green" id="bAnswer">✆<small>Yanıtla</small></button>
+        </div>
+      </div>
+
+      <!-- ana ekran -->
+      <div id="v-home" class="view">
+        <div class="wall" id="homeWall"></div>
+        <div class="apps" id="apps"></div>
+        <div class="dock" id="dock"></div>
+      </div>
+
+      <div id="banner" class="banner"></div>
+      <div id="crack"></div>
+      <div id="scare"></div>
+      <div id="sheet"><div class="sh-head"><button id="bShClose">‹ Ana Ekran</button><b id="shTitle"></b><span></span></div><div class="sh-body" id="shBody"></div></div>
+      <div id="viewer"><img id="vwImg" alt=""><video id="vwVid" playsinline preload="auto"></video><div class="rec" id="vwRec"><i></i>REC <span id="vwTc">00:00</span></div><div class="vw-cap" id="vwCap"></div><button id="bVwClose">✕</button></div>
+    </div>
+
+    <!-- telefonun arkası -->
+    <div id="v-back" class="back-view">
+      <div class="pback">
+        <div class="cam"><i></i><i></i><i class="fl"></i></div>
+        <div class="case-photo" id="casePhoto">
+          <div class="cp-inner">
+            <div class="cp-front" id="cpFront"></div>
+            <div class="cp-back"><div class="hand">Hasan'ım bugün<br>20 yaşına girdi.<br>7 Mayıs 1961 — Karagöl</div><div class="stamp">FOTO<br>KARADENİZ</div></div>
+          </div>
+        </div>
+        <div class="brand">◯ mobil</div>
+      </div>
+      <div class="back-tip" id="backTip">Kılıfın arasına eski bir fotoğraf sıkıştırılmış. Dokun.</div>
+      <button class="t-btn small" id="bFlipBack">⟲ Telefonu çevir</button>
+    </div>
+  </section>
+
+  <div id="toast"></div>
+  <div id="endcard"><div class="ec-in"><small>BÖLÜM 0</small><h2>KİLİT</h2><div class="ec-line"></div><p id="ecText"></p><div class="ec-next"><small>SIRADAKİ</small><b>Bölüm 1 — Mesajlar</b><span>Yakında</span></div><button class="t-btn" id="bEcBack">TELEFONA DÖN</button></div></div>
+  <div id="rotate"><b>Telefonu dik tut</b></div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
