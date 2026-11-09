@@ -260,15 +260,18 @@ $('bAnswer').onclick = async () => {
   callTick = tick;
   const cap = $('callCap');
   await sleep(1800); cap.textContent = '(rüzgâr… cızırtı…)';
-  await sleep(1800); cap.textContent = '…geri koy onu…'; whisper('geri koy onu');
-  await sleep(2600); cap.textContent = '…bulduğun yere…'; whisper('bulduğun yere');
-  await sleep(2300); sfx('glitch'); $('screen').classList.add('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 1000);
+  await sleep(1800); cap.textContent = '…geri koy onu…';
+  const vo = new Audio('media/audio/ses_geri_koy.mp3'); vo.volume = 1; callVo = vo;
+  vo.play().catch(() => whisper('geri koy onu… bulduğun yere'));
+  await sleep(2400); cap.textContent = '…bulduğun yere… geri koy.';
+  await sleep(3000); sfx('glitch'); $('screen').classList.add('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 1000);
   endCall(false);
 };
-let callTick = null;
+let callTick = null, callVo = null;
 function endCall(declined) {
   ringtone(false); vib(0); clearInterval(callTick);
   try { speechSynthesis.cancel(); } catch (e) {}
+  try { callVo && callVo.pause(); } catch (e) {}
   $('callSub').textContent = 'Arama sona erdi'; $('callBtns').style.display = 'none';
   setTimeout(() => {
     ambience('rain'); view(prevView === 'call' ? 'lock' : prevView); if (S.view === 'pin') renderPin();
