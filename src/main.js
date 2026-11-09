@@ -356,7 +356,7 @@ function appEl([n, ic, bg, badge]) {
   return a;
 }
 function buildHome() {
-  if (store.get('stage', null) === 'home' && !S.sawVideo && badges.Galeri !== 0) badges.Galeri = 1;
+  if (store.get('stage', null) === 'home' && !S.sawVideo && !S.galSeen) badges.Galeri = 1;
   const g = $('apps'); g.innerHTML = ''; APPS.forEach(a => g.appendChild(appEl(a)));
   const d = $('dock'); d.innerHTML = ''; DOCK.forEach(a => d.appendChild(appEl(a)));
 }
@@ -406,7 +406,7 @@ function openGallery() {
     ${store.get('gx', []).map(k => `<button data-i="${k}" style="background-image:url(${MEDIA[k]})"></button>`).join('')}
     <button class="broken" data-x>⚠︎</button>
   </div><p class="mut center" style="margin-top:14px">${6 + store.get('gx', []).length} öğe · 214 öğe kilitli albümde</p>`);
-  badges.Galeri = 0;
+  badges.Galeri = 0; S.galSeen = true;
   $('shBody').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { sfx('tap'); viewImage(b.dataset.i); });
   $('shBody').querySelector('[data-x]').onclick = () => { sfx('static'); toast('Dosya okunamıyor: IMG_0317.jpg'); };
   $('shBody').querySelector('[data-v]').onclick = () => { sfx('tap'); playFootage(); };
