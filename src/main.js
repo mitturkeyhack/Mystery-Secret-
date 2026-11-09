@@ -23,6 +23,10 @@ async function probeMedia() {
 const PLACE_WALL = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 190' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#7d97a3'/><stop offset='.6' stop-color='#c9cfc4'/><stop offset='1' stop-color='#4c6346'/></linearGradient></defs><rect width='90' height='190' fill='url(#s)'/><path d='M0 110 Q20 90 40 104 T90 96 V190 H0Z' fill='#5d7a52' opacity='.8'/><path d='M0 130 Q30 112 55 126 T90 120 V190 H0Z' fill='#3d5a37'/><rect x='18' y='108' width='34' height='26' fill='#6b4a2e'/><path d='M14 110 L35 96 L56 110Z' fill='#4a3322'/><circle cx='36' cy='140' r='5' fill='#e8c9a8'/><rect x='31' y='145' width='10' height='22' rx='3' fill='#2e6b4a'/><circle cx='52' cy='142' r='4.5' fill='#e2c3a0'/><rect x='48' y='147' width='9' height='21' rx='3' fill='#5a4a3a'/><rect x='0' y='0' width='90' height='190' fill='white' opacity='.12'/></svg>`)}")`;
 const PLACE_OLD = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 40'><rect width='30' height='40' fill='#a89a80'/><rect x='4' y='18' width='22' height='22' fill='#7a6b55'/><circle cx='15' cy='13' r='4' fill='#d8cbb0'/><rect x='11' y='17' width='8' height='14' fill='#4a4036'/><rect x='10.5' y='9' width='9' height='2.5' fill='#3a3028'/></svg>`)}")`;
 
+// videolar: yalnızca gerçekten oynarken görünsün (Android'in oynat simgesi çıkmasın)
+document.getElementById('s-intro').style.background = '#000 url(media/intro_poster.jpg) center/cover';
+for (const id of ['introVid', 'vwVid']) { const v = document.getElementById(id); v.controls = false; v.addEventListener('playing', () => v.classList.add('playing')); v.addEventListener('emptied', () => v.classList.remove('playing')); }
+
 // ---------- yağmur / ışık efekti (başlık ekranı) ----------
 const fx = $('fx'), fctx = fx.getContext('2d');
 let drops = [], flash = 0, fxOn = true;
