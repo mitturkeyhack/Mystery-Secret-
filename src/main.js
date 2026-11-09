@@ -356,6 +356,7 @@ function appEl([n, ic, bg, badge]) {
   return a;
 }
 function buildHome() {
+  if (store.get('stage', null) === 'home' && !S.sawVideo && badges.Galeri !== 0) badges.Galeri = 1;
   const g = $('apps'); g.innerHTML = ''; APPS.forEach(a => g.appendChild(appEl(a)));
   const d = $('dock'); d.innerHTML = ''; DOCK.forEach(a => d.appendChild(appEl(a)));
 }
@@ -366,7 +367,7 @@ let sheetCleanup = null;
 function closeSheet() { if (sheetCleanup) { const f = sheetCleanup; sheetCleanup = null; f(); } chatOpen = false; $('sheet').classList.remove('on'); S.view = 'home'; }
 $('bShClose').onclick = () => { sfx('tap'); closeSheet(); };
 const row = (a, b = '', cls = '') => `<div class="row ${cls}"><span>${a}</span><small>${b}</small></div>`;
-const LOCKED = (t) => `<div class="lock">🔒</div><p class="center">${t}</p><p class="center mut" style="margin-top:8px">Bölüm 1'de açılacak.</p>`;
+const LOCKED = (t) => `<div class="lock">🔒</div><p class="center">${t}</p><p class="center red" style="margin-top:10px">Galeri'de kurtarılan bir video var. Önce onu izle.</p>`;
 const APP_PAGES = {
   'Mesajlar': () => sheet('Mesajlar', `${row('<b>Annem</b><br><span class="mut">Kızım neredesin? Bir ses ver ne olur…</span>', '2 sa')}${row('<b>Ece 🌻</b><br><span class="mut">Deniz o sesi ben de duydum…</span>', 'dün')}${row('<b class="red">Bilinmeyen Numara</b><br><span class="mut">Şimdi geri koy.</span>', 'şimdi')}${row('<b>Dedem 🤍</b><br><span class="mut">Sesli mesaj · 0:12</span>', '5 gün')}<div class="sec">ŞİFRELİ</div>${LOCKED('Bu konuşmalar ikinci bir şifreyle korunuyor.')}`),
   'Galeri': () => openGallery(),
