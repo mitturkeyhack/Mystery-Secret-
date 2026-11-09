@@ -5,7 +5,8 @@ Karagöl yaylasında, çamurun içinde bir telefon buldun. Sahibi Deniz Aydın, 
 Telefonun ekranında oynanan karanlık bir gizem / gerilim oyunu.
 
 - **Bölüm 0 — Kilit:** Telefonun şifresini hikâyedeki ipuçlarıyla çöz.
-- **Bölüm 1 — Mesajlar:** yakında.
+- **Bölüm 1 — Mesajlar:** Bozuk ses kayıtlarını onar, gizli sohbetleri aç, Bilinmeyen Numara ile konuş.
+- **Bölüm 2 — Karagöl:** yakında.
 
 🎧 Kulaklık tak. Işıkları kapat. Yalnız oyna.
 

@@ -10,7 +10,7 @@ const PIN = '070541';
 const S = { attempts: 0, called: false, lockUntil: 0, entry: '', view: 'lock', bat: 31, mins: 3 * 60 + 17, unlocked: false, flipped: false, sawVideo: false };
 
 // ---------- medya (varsa gerçek, yoksa yer tutucu) ----------
-const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4' };
+const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4', selfie: 'media/selfie_maden.jpg', g317: 'media/galeri317.jpg', defter: 'media/defter_son.jpg', miners: 'media/madenciler.jpg' };
 const has = {};
 function probeImg(key) { return new Promise(res => { const i = new Image(); i.onload = () => { has[key] = true; res(true); }; i.onerror = () => res(false); i.src = MEDIA[key]; }); }
 async function probeMedia() {
@@ -142,7 +142,7 @@ function endIntro() { if (introEnded) return; introEnded = true; introStop = tru
 function enterDevice(resume) {
   scr('s-device'); ambience('rain');
   clock();
-  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') === 'ch0done'; view('home'); buildHome(); ambience('room'); return; }
+  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') !== 'home'; view('home'); buildHome(); ambience('room'); if (store.get('stage') === 'ch0done') setTimeout(startCh1, 1500); return; }
   view('lock'); buildNotifs();
   setTimeout(() => { if (S.view === 'lock' || S.view === 'pin') darkNotif(); }, 7000);
   setTimeout(() => { if (!S.called && !S.unlocked && (S.view === 'lock' || S.view === 'pin')) incomingCall(); }, 65000);
@@ -361,8 +361,9 @@ function buildHome() {
 }
 
 // ---------- uygulamalar (Bölüm 0'da sınırlı ama hikâyeye bağlı) ----------
-function sheet(title, html) { $('shTitle').textContent = title; $('shBody').innerHTML = html; $('sheet').classList.add('on'); S.view = 'app'; }
-function closeSheet() { $('sheet').classList.remove('on'); S.view = 'home'; }
+function sheet(title, html) { if (sheetCleanup) { const f = sheetCleanup; sheetCleanup = null; f(); } chatOpen = false; $('shTitle').textContent = title; $('shBody').innerHTML = html; $('sheet').classList.add('on'); S.view = 'app'; }
+let sheetCleanup = null;
+function closeSheet() { if (sheetCleanup) { const f = sheetCleanup; sheetCleanup = null; f(); } chatOpen = false; $('sheet').classList.remove('on'); S.view = 'home'; }
 $('bShClose').onclick = () => { sfx('tap'); closeSheet(); };
 const row = (a, b = '', cls = '') => `<div class="row ${cls}"><span>${a}</span><small>${b}</small></div>`;
 const LOCKED = (t) => `<div class="lock">🔒</div><p class="center">${t}</p><p class="center mut" style="margin-top:8px">Bölüm 1'de açılacak.</p>`;
@@ -384,7 +385,11 @@ const APP_PAGES = {
   'Kamera': () => { sfx('glitch'); $('screen').classList.add('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 600); toast('Kamera şu anda başka bir uygulama tarafından kullanılıyor.', 3000); },
   'Müzik': () => sheet('Müzik', `<div class="big">🎵</div><p class="center"><b>dedemin_kaseti_A.mp3</b><br><span class="mut">Bilinmeyen Sanatçı · Kemençe</span></p><p class="red center" style="margin-top:14px">Çalınamıyor — dosya bozuk.</p>`),
 };
-function openApp(n) { (APP_PAGES[n] || (() => toast(n)))(); }
+function openApp(n) {
+  const ch1 = ['ch1', 'ch1done'].includes(store.get('stage', null));
+  if (ch1 && CH1_PAGES[n]) { badges[n] = 0; buildHome(); return CH1_PAGES[n](); }
+  (APP_PAGES[n] || (() => toast(n)))();
+}
 
 // galeri
 function openGallery() {
@@ -395,14 +400,15 @@ function openGallery() {
     <button data-i="notebook" style="background-image:url(${MEDIA.notebook})"></button>
     <button data-i="wallpaper" style="background-image:url(${MEDIA.wallpaper})"></button>
     <button data-i="oldphoto" style="background-image:url(${MEDIA.oldphoto})"></button>
+    ${store.get('gx', []).map(k => `<button data-i="${k}" style="background-image:url(${MEDIA[k]})"></button>`).join('')}
     <button class="broken" data-x>⚠︎</button>
-  </div><p class="mut center" style="margin-top:14px">6 öğe · 214 öğe kilitli albümde</p>`);
+  </div><p class="mut center" style="margin-top:14px">${6 + store.get('gx', []).length} öğe · 214 öğe kilitli albümde</p>`);
   badges.Galeri = 0;
   $('shBody').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { sfx('tap'); viewImage(b.dataset.i); });
   $('shBody').querySelector('[data-x]').onclick = () => { sfx('static'); toast('Dosya okunamıyor: IMG_0317.jpg'); };
   $('shBody').querySelector('[data-v]').onclick = () => { sfx('tap'); playFootage(); };
 }
-const CAPS = { village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
+const CAPS = { selfie: '5 Kasım · 03:16', g317: '317', defter: 'Dedemin defteri — son sayfa', miners: 'Karagöl Bakır Ocağı, 1941', village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
 function vwOpen() { $('viewer').classList.add('on'); $('vwImg').style.display = 'none'; $('vwVid').style.display = 'none'; $('vwRec').style.display = 'none'; $('vwCap').textContent = ''; }
 function vwClose() { const v = $('vwVid'); try { v.pause(); } catch (e) {} v.onended = v.ontimeupdate = null; $('viewer').classList.remove('on'); }
 $('bVwClose').onclick = () => { sfx('tap'); if (footageOn) return; vwClose(); };
@@ -431,12 +437,247 @@ async function footageEnd() {
   await sleep(1200);
   endCard();
 }
-function endCard() {
-  const e = $('endcard');
-  $('ecText').innerHTML = 'Telefonun sahibi <b>Deniz Aydın</b>.<br>5 Kasım gecesi, dedesinin 1941\'de kapanan bakır ocağına girdi.<br>O geceden beri biri bu telefonu izliyor.<br><br><span style="color:#8a1c1c">Ve artık seni de biliyor.</span>';
+const ENDS = {
+  0: { ch: 'BÖLÜM 0', title: 'KİLİT', next: 'Bölüm 1 — Mesajlar', soon: 'Hazır', btn: 'BÖLÜM 1\'E GEÇ',
+    text: 'Telefonun sahibi <b>Deniz Aydın</b>.<br>5 Kasım gecesi, dedesinin 1941\'de kapanan bakır ocağına girdi.<br>O geceden beri biri bu telefonu izliyor.<br><br><span style="color:#8a1c1c">Ve artık seni de biliyor.</span>' },
+  1: { ch: 'BÖLÜM 1', title: 'MESAJLAR', next: 'Bölüm 2 — Karagöl', soon: 'Yakında', btn: 'TELEFONA DÖN',
+    text: '1941\'de altı kişi girdi. İki kişi çıktı.<br>Hasan Aydın 85 yıl bir sırrı sakladı.<br>Deniz o kapıyı açık bıraktı.<br><br><span style="color:#8a1c1c">Ve şimdi kapının bu tarafında<br>telefonu tutan tek kişi sensin.</span>' },
+};
+let endShown = 0;
+function endCard(n = 0) {
+  endShown = n; const d = ENDS[n], e = $('endcard');
+  $('ecCh').textContent = d.ch; $('ecTitle').textContent = d.title; $('ecText').innerHTML = d.text;
+  $('ecNext').textContent = d.next; $('ecSoon').textContent = d.soon; $('bEcBack').textContent = d.btn;
   e.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => e.classList.add('show')));
   ambience('rain'); sfx('thunder');
 }
-$('bEcBack').onclick = () => { sfx('tap'); const e = $('endcard'); e.classList.remove('show'); setTimeout(() => e.classList.remove('on'), 600); ambience('room'); };
+$('bEcBack').onclick = () => {
+  sfx('tap'); const e = $('endcard'); e.classList.remove('show'); setTimeout(() => e.classList.remove('on'), 600); ambience('room');
+  if (endShown === 0 && store.get('stage', null) === 'ch0done') setTimeout(startCh1, 1400);
+};
 
-window.__kt = { S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard };
+// ===================== BÖLÜM 1 — MESAJLAR =====================
+const CLIPS = [
+  { id: 'dede_1', name: 'dedem_anlatiyor_1.m4a', date: '1 Kasım', target: 34, sub: ['Kızım… kaydediyor mu bu?', 'Peki. Bin dokuz yüz kırk bir. Yaz sonuydu.', 'Karagöl\'ün bakır ocağında çalışırdık.', 'O sabah… altı kişi girdik ocağa.'] },
+  { id: 'dede_2', name: 'dedem_anlatiyor_2.m4a', date: '1 Kasım', target: 72, sub: ['Önce su geldi… sonra tavan çöktü.', 'Karanlıkta beş gün bekledik.', 'Beşinci gece… içeriden biri bizi adımızla çağırmaya başladı.', 'Ama biz altı kişiydik kızım. Ve hepimiz… oradaydık.'] },
+  { id: 'dede_3', name: 'dedem_anlatiyor_3.m4a', date: '2 Kasım', target: 17, sub: ['Üç yüz on yedi numaralı galeri.', 'Orada bir kapı var kızım… taştan.', 'Ben onu açtım. Çıktım… ötekiler gelmedi.', 'Ama o… o da benimle çıktı.', 'Sakın gitme oraya. Sakın… açma onu.'] },
+  { id: 'deniz_maden', name: 'madene_giris.m4a', date: '5 Kasım · 03:14', target: 58, sub: ['Saat üçü on dört geçiyor.', 'Dedemin dediği galeriyi buldum… üç yüz on yedi.', 'Kapı… kapı zaten açık.', 'Bir saniye…', 'Biri… biri içeriden adımı söylüyor.'] },
+];
+const fixed = () => store.get('fixed', []);
+function startCh1() {
+  if (store.get('stage', null) !== 'ch0done') return;
+  store.set('stage', 'ch1'); S.view = 'home';
+  badges['Sesli Notlar'] = 4; buildHome();
+  setTimeout(() => { banner('🎙️', 'Sesli Notlar', '4 kayıt kısmen kurtarıldı. Onarılabilir.', false, 'SESLİ NOTLAR'); sfx('notif'); }, 1200);
+}
+
+// --- ses onarımı ---
+let AC1 = null;
+const ac1 = () => { if (!AC1) AC1 = new (window.AudioContext || window.webkitAudioContext)(); if (AC1.state === 'suspended') AC1.resume(); return AC1; };
+function noiseLoop() {
+  const a = ac1(), len = a.sampleRate * 2, b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.002 ? 3 : 1);
+  const src = a.createBufferSource(); src.buffer = b; src.loop = true;
+  const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.6;
+  const g = a.createGain(); g.gain.value = 0.4; src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+  return { g, stop: () => { try { src.stop(); } catch (e) {} } };
+}
+function playSubs(au, c, box) {
+  au.ontimeupdate = () => { const d = au.duration || 12; const k = Math.min(c.sub.length - 1, Math.floor(au.currentTime / d * c.sub.length)); box.textContent = c.sub[k]; };
+  au.onended = () => { box.textContent = ''; $('rpPlay') && ($('rpPlay').textContent = '▶ Tekrar dinle'); };
+}
+function openRepair(c) {
+  const done = fixed().includes(c.id);
+  sheet('Ses Onarımı', `<div class="rp"><div class="rp-name">🎙️ ${c.name}<br><small>${c.date}</small></div><canvas id="rpWave"></canvas>
+    <div class="rp-stat ${done ? 'ok' : ''}" id="rpStat">${done ? 'ONARILDI ✓' : 'SİNYAL %0'}</div>
+    ${done ? '' : `<input type="range" id="rpSl" min="0" max="100" value="${c.target > 50 ? 4 : 96}"><div class="rp-hint">Cızırtı kaybolana kadar frekansı yavaşça kaydır</div>`}
+    <div class="rp-sub" id="rpSub"></div>${done ? '<button class="rp-btn" id="rpPlay">▶ Dinle</button>' : ''}</div>`);
+  stopAmbience();
+  const au = new Audio(`media/audio/${c.id}.mp3`); au.preload = 'auto';
+  const cv = $('rpWave'), R = cv.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); cv.width = R.width * dp; cv.height = R.height * dp;
+  const ctx = cv.getContext('2d'); let clarity = done ? 1 : 0, alive = true, hold = 0, solved = done, nz = null;
+  const draw = () => {
+    if (!alive) return; const W = cv.width, H = cv.height; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    const playing = !au.paused; ctx.fillStyle = clarity > 0.92 ? '#30d158' : '#ff453a';
+    for (let x = 0; x < W; x += 4 * dp) {
+      const clean = playing ? (0.25 + 0.6 * Math.abs(Math.sin(x * 0.013 + performance.now() / 180) * Math.sin(x * 0.004 + performance.now() / 700))) : 0.05;
+      const h = (clean * clarity + Math.random() * (1 - clarity)) * H * 0.85; ctx.fillRect(x, (H - h) / 2, 2.4 * dp, h);
+    }
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+  sheetCleanup = () => { alive = false; au.pause(); au.src = ''; if (nz) nz.stop(); ambience('room'); };
+  if (done) { $('rpPlay').onclick = () => { sfx('tap'); au.currentTime = 0; au.volume = 1; au.play().catch(() => {}); playSubs(au, c, $('rpSub')); $('rpPlay').textContent = '■ Oynatılıyor'; }; return; }
+  nz = noiseLoop(); au.loop = true; au.volume = 0.05; au.play().catch(() => {});
+  const sl = $('rpSl'), stat = $('rpStat');
+  const upd = () => {
+    if (solved) return;
+    const d = Math.abs(sl.value - c.target); clarity = Math.max(0, 1 - d / 22);
+    au.volume = Math.min(1, 0.04 + 0.96 * clarity * clarity); nz.g.gain.value = 0.02 + 0.45 * (1 - clarity);
+    stat.textContent = `SİNYAL %${Math.round(clarity * 100)}`; stat.classList.toggle('near', clarity > 0.6);
+    $('rpSub').textContent = clarity > 0.55 ? c.sub[Math.min(c.sub.length - 1, Math.floor((au.currentTime / (au.duration || 12)) * c.sub.length))].replace(/[a-zçğıöşü]/gi, ch => Math.random() > clarity ? '▒' : ch) : '';
+  };
+  sl.oninput = () => { upd(); vib(4); };
+  const iv = setInterval(() => {
+    if (!alive) return clearInterval(iv);
+    upd();
+    if (Math.abs(sl.value - c.target) <= 3) { hold += 100; if (hold >= 1200 && !solved) { solved = true; clearInterval(iv); finishRepair(c, au, nz); } } else hold = 0;
+  }, 100);
+}
+function finishRepair(c, au, nz) {
+  nz.g.gain.value = 0; sfx('unlock'); vib([20, 40, 20]);
+  const st = $('rpStat'); st.textContent = 'ONARILDI ✓'; st.className = 'rp-stat ok';
+  $('rpSl').disabled = true; document.querySelector('.rp-hint').textContent = 'Kayıt onarıldı.';
+  store.set('fixed', [...new Set([...fixed(), c.id])]);
+  au.loop = false; au.currentTime = 0; au.volume = 1; au.play().catch(() => {}); playSubs(au, c, $('rpSub'));
+  if (c.id === 'dede_3') setTimeout(() => { if (!store.get('msgOpen', false)) { banner('?', 'Bilinmeyen Numara', 'Hasan saati hep o rakama kurardı.', true); sfx('darknotif'); } }, (au.duration || 16) * 1000 + 1500);
+  if (c.id === 'deniz_maden') setTimeout(() => { banner('?', 'Bilinmeyen Numara', 'Onu ben çağırdım.', true); sfx('darknotif'); vib([200, 100, 200]); }, (au.duration || 15) * 1000 + 1200);
+}
+
+// --- gizli sohbetler kodu ---
+function openCodePad() {
+  let code = '';
+  sheet('Gizli Sohbetler', `<div class="lock" style="margin-top:20px">🔒</div><p class="center">Gizli sohbetler 4 haneli kodla korunuyor.</p><div class="cdots" id="cdots"></div><div class="cpad" id="cpad"></div><p class="center red" id="cerr" style="min-height:22px"></p>`);
+  const dots = () => { $('cdots').innerHTML = [0, 1, 2, 3].map(i => `<i class="${i < code.length ? 'on' : ''}"></i>`).join(''); };
+  dots();
+  for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']) {
+    const b = document.createElement('button'); b.textContent = k; if (!k) b.style.visibility = 'hidden';
+    b.onclick = () => {
+      sfx('key'); vib(6);
+      if (k === '⌫') code = code.slice(0, -1); else if (code.length < 4) code += k;
+      dots();
+      if (code.length === 4) setTimeout(() => {
+        if (code === '0317') { sfx('unlock'); store.set('msgOpen', true); openMessages(); setTimeout(() => { banner('?', 'Bilinmeyen Numara', 'Benim de mesajlarım var.', true); sfx('darknotif'); badges['Mesajlar'] = 1; }, 6000); }
+        else { sfx('error'); vib([60, 40, 60]); $('cerr').textContent = 'Yanlış kod'; code = ''; dots(); const d = $('cdots'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); }
+      }, 200);
+    };
+    $('cpad').appendChild(b);
+  }
+}
+
+// --- mesajlar ---
+function openMessages() {
+  const open = store.get('msgOpen', false), cDone = store.get('chatDone', false);
+  sheet('Mesajlar', `${row('<b>Annem</b><br><span class="mut">Kızım neredesin? Bir ses ver ne olur…</span>', '2 sa')}
+    ${open ? `<button class="row-btn" id="mEce">${row('<b>Ece 🌻</b><br><span class="mut">Deniz??</span>', 'dün')}</button>
+    <button class="row-btn" id="mUnk">${row(`<b class="red">Bilinmeyen Numara</b><br><span class="mut">${cDone ? 'Gel de gör.' : 'Benim de mesajlarım var.'}</span>`, 'şimdi')}</button>`
+    : `<button class="row-btn" id="mLock">${row('<b>🔒 Gizli Sohbetler</b><br><span class="mut">2 sohbet · kod gerekli</span>', '')}</button>`}`);
+  if (open) { $('mEce').onclick = () => { sfx('tap'); openEce(); }; $('mUnk').onclick = () => { sfx('tap'); openUnknown(); }; }
+  else $('mLock').onclick = () => { sfx('tap'); openCodePad(); };
+}
+const ECE = [
+  ['t', '5 Kasım · 02:51'], ['o', 'Ece geldim. Ocağın girişindeyim.'], ['i', 'Deniz deli misin?? Dön geri'], ['o', 'Dedem 85 yıl bunu tek başına taşıdı. Bilmem lazım.'],
+  ['i', 'O ses kaydını dinledim. Senin adını söylüyordu, şaka değil bu!!'], ['t', '03:10'], ['o', '317\'yi buldum'], ['o', 'Ece bu kapı içeriden açılmış'],
+  ['t', '03:16'], ['oi', 'selfie'], ['o', 'arkamda biri var mı söyle'], ['i', 'DENİZ'], ['i', 'ÇIK ORADAN'], ['i', 'DENİZ CEVAP VER'], ['t', 'Dün'], ['i', 'Deniz??'],
+];
+function bubble(kind, v) {
+  if (kind === 't') return `<div class="c-time">${v}</div>`;
+  if (kind === 'oi' || kind === 'ii') return `<div class="msg img ${kind === 'oi' ? 'out' : 'in red'}"><img src="${MEDIA[v]}" data-k="${v}"></div>`;
+  return `<div class="msg ${kind === 'o' ? 'out' : kind === 'u' ? 'in red' : 'in'}">${v}</div>`;
+}
+function wireImgs() { $('shBody').querySelectorAll('.msg img').forEach(im => im.onclick = () => { sfx('tap'); viewImage(im.dataset.k); }); }
+function openEce() {
+  sheet('Ece 🌻', `<div class="chat">${ECE.map(([k, v]) => bubble(k, v)).join('')}</div>`);
+  wireImgs(); addGx('selfie'); const b = $('shBody'); b.scrollTop = b.scrollHeight;
+  sheetCleanup = () => { setTimeout(openMessages, 50); };
+}
+function addGx(k) { const g = store.get('gx', []); if (!g.includes(k)) { g.push(k); store.set('gx', g); } }
+
+// --- Bilinmeyen ile canlı sohbet ---
+let chatOpen = false, chatRunning = false, pendingChoice = null;
+const CHAT = [];
+function renderChat() {
+  sheet('Bilinmeyen Numara', `<div class="chat" id="chat">${CHAT.map(([k, v]) => bubble(k, v)).join('')}<div class="typing hidden" id="typing"><i></i><i></i><i></i></div></div><div class="choices" id="choices"></div>`);
+  chatOpen = true; wireImgs(); if (pendingChoice) showChoices(); scrollChat();
+  sheetCleanup = () => { chatOpen = false; };
+}
+function scrollChat() { const b = $('shBody'); if (b) b.scrollTop = b.scrollHeight; }
+function pushMsg(k, v) {
+  CHAT.push([k, v]);
+  if (k === 'ii') addGx(v);
+  if (chatOpen) { $('typing').insertAdjacentHTML('beforebegin', bubble(k, v)); wireImgs(); scrollChat(); }
+  if (k === 'u' || k === 'ii') { sfx('darknotif'); vib(40); if (!chatOpen) { banner('?', 'Bilinmeyen Numara', k === 'u' ? v : '📷 Fotoğraf', true); badges['Mesajlar'] = 1; buildHome(); } }
+}
+async function say(text, wait) {
+  if (chatOpen) { $('typing').classList.remove('hidden'); scrollChat(); }
+  await sleep(wait ?? Math.min(3200, 700 + text.length * 45));
+  if (chatOpen) $('typing').classList.add('hidden');
+  pushMsg('u', text); await sleep(500);
+}
+async function sendImg(k) { if (chatOpen) $('typing').classList.remove('hidden'); await sleep(1600); if (chatOpen) $('typing').classList.add('hidden'); pushMsg('ii', k); await sleep(900); }
+function showChoices() {
+  const box = $('choices'); if (!box || !pendingChoice) return;
+  box.innerHTML = ''; pendingChoice.opts.forEach((o, i) => { const b = document.createElement('button'); b.textContent = o; b.onclick = () => { sfx('key'); const p = pendingChoice; pendingChoice = null; box.innerHTML = ''; pushMsg('o', o); p.res(i); }; box.appendChild(b); });
+  scrollChat();
+}
+const choose = (opts) => new Promise(res => { pendingChoice = { opts, res }; if (chatOpen) showChoices(); });
+function openUnknown() {
+  renderChat();
+  if (!chatRunning) { chatRunning = true; CHAT.length = 0; renderChat(); runChat(); }
+}
+async function runChat() {
+  await sleep(800);
+  await say('Sesleri dinledin.');
+  await say('Hasan sana her şeyi anlatmadı. Ben anlatayım mı?');
+  let c = await choose(['Sen kimsin?', 'Deniz nerede?']);
+  if (c === 0) { await say('1941\'de altı kişi girdi.'); await say('İki kişi çıktı.'); await say('Hasan… ve ben.'); }
+  else { await say('Kapının öbür tarafında.'); await say('Hasan\'ın yerini aldı.'); await say('Biri hep kalmak zorunda.'); }
+  await say('Sana bir şey göstereyim.'); await sendImg('g317'); await say('Deniz kapıyı açık bıraktı.');
+  c = await choose(['Onu geri ver.', 'Polisi arayacağım.']);
+  if (c === 0) { await say('Takas.'); await say('Bir can… bir can.'); }
+  else { S.bat = Math.max(4, S.bat - 7); clock(); sfx('glitch'); $('screen').classList.add('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 500); await say('Şebeken yok.'); await say('Hiç olmadı.'); }
+  await say('Defterin son sayfasını gördün mü?'); await sendImg('defter'); await say('Hasan bunu 85 yıl yazdı. Kimse dinlemedi.');
+  c = await choose(['Ne istiyorsun?', 'Telefonu kapatıyorum.']);
+  if (c === 1) { sfx('glitch'); vib([80, 40, 80]); toast('Kapatma menüsü yanıt vermiyor.', 2600); await sleep(1400); await say('Kapatamazsın.'); await say('Peki… ne istediğimi soracaktın.'); }
+  await say('Geri koy onu.'); await say('Bulduğun yere.');
+  await sleep(900);
+  if (chatOpen) $('typing').classList.remove('hidden');
+  await sleep(1800); if (chatOpen) $('typing').classList.add('hidden');
+  pushMsg('u', '🎤 Sesli mesaj · 0:06');
+  const vo = new Audio('media/audio/ses_sen_de.mp3'); stopAmbience(); vo.play().catch(() => {});
+  await sleep(7000); ambience('room');
+  await say('Bu fotoğrafa iyi bak.'); await sendImg('miners'); await say('Sağdaki benim.');
+  c = await choose(['Neden yüzün yok?', '…']);
+  await say(c === 0 ? 'Çünkü henüz seçmedim.' : 'Korkma.', 1800);
+  await say('Gel de gör.', 2200);
+  store.set('chatDone', true);
+  await sleep(1200);
+  finale();
+}
+
+// --- final: 317 numaralı kapı ---
+async function finale() {
+  if (S.view === 'app') closeSheet();
+  vwOpen(); footageOn = true; $('bVwClose').style.opacity = .15;
+  const im = $('vwImg'); im.src = MEDIA.g317; im.style.display = 'block'; im.classList.add('kb');
+  $('vwRec').style.display = 'flex';
+  let dark = $('vwDark'); if (!dark) { dark = document.createElement('div'); dark.id = 'vwDark'; $('viewer').appendChild(dark); }
+  stopAmbience(); ambience('static');
+  const t0 = Date.now(); let fl = true;
+  const tc = setInterval(() => { $('vwTc').textContent = '03:' + String(16 + Math.floor((Date.now() - t0) / 1000) % 44).padStart(2, '0'); }, 300);
+  $('vwCap').textContent = '(canlı)';
+  for (let i = 0; i < 16; i++) { // fener titremesi, giderek kötüleşiyor
+    dark.style.opacity = Math.random() < 0.25 + i * 0.03 ? (0.6 + Math.random() * 0.4).toFixed(2) : (0.05 + i * 0.02).toFixed(2);
+    if (i % 4 === 0) sfx('heart');
+    await sleep(220 + Math.random() * 260);
+  }
+  $('vwCap').textContent = '';
+  dark.style.opacity = 1; stopAmbience(); await sleep(1400);
+  await jumpScare();
+  clearInterval(tc); dark.style.opacity = 0; im.classList.remove('kb');
+  vwClose(); footageOn = false; $('bVwClose').style.opacity = '';
+  store.set('stage', 'ch1done');
+  await sleep(1300); endCard(1);
+}
+
+const CH1_PAGES = {
+  'Sesli Notlar': () => {
+    const f = fixed();
+    sheet('Sesli Notlar', CLIPS.map((c, i) => `<button class="row-btn" data-c="${i}">${row(`${c.name}<br><span class="mut">${c.date}</span>`, f.includes(c.id) ? '<span style="color:#30d158">▶ Dinle</span>' : '<span class="red">⚠︎ Onar</span>')}</button>`).join('') + `<p class="mut center" style="margin-top:14px">${f.length}/4 kayıt onarıldı</p>`);
+    $('shBody').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { sfx('tap'); openRepair(CLIPS[+b.dataset.c]); });
+  },
+  'Mesajlar': () => openMessages(),
+  'Saat': () => sheet('Saat', `<div class="sec">ALARMLAR</div>${row('<span style="font-size:34px;font-weight:200">03:17</span><br><span class="red">UYAN. ORADAN ÇIK.</span>', 'her gün')}${row('<span style="font-size:34px;font-weight:200;color:#666">07:30</span><br><span class="mut">ilaçlar — dedem</span>', 'kapalı')}<p class="mut center" style="margin-top:14px">Alarm sahibi: Hasan Aydın'ın telefonundan aktarıldı.</p>`),
+};
+
+window.__kt = { S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard, startCh1, store, CLIPS, finale };

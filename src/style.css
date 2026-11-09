@@ -224,3 +224,36 @@ dd{font-size:16px;margin-top:3px;line-height:1.4}
 video{background:#000 center/cover no-repeat;opacity:0;transition:opacity .25s}
 video.playing{opacity:1}
 video::-webkit-media-controls,video::-webkit-media-controls-start-playback-button,video::-webkit-media-controls-overlay-play-button,video::-webkit-media-controls-panel{display:none!important;-webkit-appearance:none}
+
+/* ===== Bölüm 1 ===== */
+.row-btn{display:block;width:100%;text-align:left;color:inherit}
+.rp{display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:6px}
+.rp-name{text-align:center;font-size:15px}.rp-name small{color:#777}
+#rpWave{width:100%;height:120px;background:#000;border-radius:12px;border:1px solid #222}
+.rp-stat{font:600 14px ui-monospace,monospace;color:#ff453a;letter-spacing:2px}.rp-stat.near{color:#ffd60a}.rp-stat.ok{color:#30d158}
+.rp input[type=range]{width:100%;accent-color:#ff453a;height:34px}
+.rp-hint{color:#777;font-size:13px}
+.rp-sub{min-height:56px;text-align:center;font-size:17px;color:#fff;line-height:1.4;font-style:italic}
+.rp-btn{padding:12px 30px;border-radius:24px;background:#1c1c1e;border:1px solid #333;font-size:15px}
+.cdots{display:flex;gap:16px;justify-content:center;margin:20px 0 6px}.cdots i{width:13px;height:13px;border-radius:50%;border:1.5px solid #fff}.cdots i.on{background:#fff}
+.cpad{display:grid;grid-template-columns:repeat(3,70px);gap:14px;justify-content:center;margin-top:16px}
+.cpad button{height:70px;border-radius:50%;background:#222;font-size:28px;font-weight:300}.cpad button:active{background:#444}
+.chat{display:flex;flex-direction:column;gap:6px;padding-bottom:10px}
+.msg{max-width:78%;padding:8px 13px;border-radius:18px;font-size:15px;line-height:1.35;animation:pop .25s}
+.msg.in{align-self:flex-start;background:#26262a;border-bottom-left-radius:5px}
+.msg.out{align-self:flex-end;background:#0a84ff;color:#fff;border-bottom-right-radius:5px}
+.msg.red{background:#2b0b0b;color:#ffd0d0;border:1px solid #4a1414}
+.msg.img{padding:3px;max-width:62%}.msg img{width:100%;border-radius:14px;display:block}
+.c-time{align-self:center;color:#666;font-size:11px;margin:10px 0 4px}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.typing{align-self:flex-start;background:#2b0b0b;border-radius:18px;padding:12px 14px;display:flex;gap:4px}
+.typing.hidden{display:none}.typing i{width:7px;height:7px;border-radius:50%;background:#a55;animation:tdot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{50%{opacity:.25;transform:translateY(-3px)}}
+.choices{position:sticky;bottom:-40px;display:flex;flex-direction:column;gap:8px;padding:14px 0 30px;background:linear-gradient(transparent,#0d0d0f 25%)}
+.choices:empty{display:none}
+.choices button{border:1px solid #0a84ff;color:#0a84ff;border-radius:22px;padding:11px;font-size:15px;background:#0d0d0f}
+#vwImg.kb{animation:kb 7s ease-in forwards;max-width:none;width:100%;height:100%;object-fit:cover}
+@keyframes kb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.35) translate(0,4%)}}
+#vwDark{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .06s}
+.cdots.shake{animation:shake .45s}
