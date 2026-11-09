@@ -10,7 +10,7 @@ const PIN = '070541';
 const S = { attempts: 0, called: false, lockUntil: 0, entry: '', view: 'lock', bat: 31, mins: 3 * 60 + 17, unlocked: false, flipped: false, sawVideo: false };
 
 // ---------- medya (varsa gerçek, yoksa yer tutucu) ----------
-const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4', selfie: 'media/selfie_maden.jpg', g317: 'media/galeri317.jpg', defter: 'media/defter_son.jpg', miners: 'media/madenciler.jpg' };
+const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4', selfie: 'media/selfie_maden.jpg', g317: 'media/galeri317.jpg', defter: 'media/defter_son.jpg', miners: 'media/madenciler.jpg', dedeWin: 'media/dede_pencere.jpg', harita: 'media/harita.jpg', ayrim: 'media/tunel_ayrim.jpg', denizArka: 'media/deniz_arka.jpg', kapiIc: 'media/kapi_ic.jpg', figUzak: 'media/figur_uzak.jpg', figYakin: 'media/figur_yakin.jpg' };
 const has = {};
 function probeImg(key) { return new Promise(res => { const i = new Image(); i.onload = () => { has[key] = true; res(true); }; i.onerror = () => res(false); i.src = MEDIA[key]; }); }
 async function probeMedia() {
@@ -142,7 +142,7 @@ function endIntro() { if (introEnded) return; introEnded = true; introStop = tru
 function enterDevice(resume) {
   scr('s-device'); ambience('rain');
   clock();
-  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') !== 'home'; view('home'); buildHome(); ambience('room'); if (store.get('stage') === 'ch0done') setTimeout(startCh1, 1500); return; }
+  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') !== 'home'; view('home'); buildHome(); ambience('room'); if (store.get('stage') === 'ch0done') setTimeout(startCh1, 1500); if (store.get('stage') === 'ch1done') setTimeout(startCh2, 1500); if (store.get('stage') === 'ch2' && !store.get('c2called', false)) setTimeout(dedeCall, 2500); return; }
   view('lock'); buildNotifs();
   setTimeout(() => { if (S.view === 'lock' || S.view === 'pin') darkNotif(); }, 7000);
   setTimeout(() => { if (!S.called && !S.unlocked && (S.view === 'lock' || S.view === 'pin')) incomingCall(); }, 65000);
@@ -386,7 +386,9 @@ const APP_PAGES = {
   'Müzik': () => sheet('Müzik', `<div class="big">🎵</div><p class="center"><b>dedemin_kaseti_A.mp3</b><br><span class="mut">Bilinmeyen Sanatçı · Kemençe</span></p><p class="red center" style="margin-top:14px">Çalınamıyor — dosya bozuk.</p>`),
 };
 function openApp(n) {
-  const ch1 = ['ch1', 'ch1done'].includes(store.get('stage', null));
+  const st = store.get('stage', null) || '';
+  if (st.startsWith('ch2') && CH2_PAGES[n]) { badges[n] = 0; buildHome(); return CH2_PAGES[n](); }
+  const ch1 = ['ch1', 'ch1done'].includes(st) || st.startsWith('ch2');
   if (ch1 && CH1_PAGES[n]) { badges[n] = 0; buildHome(); return CH1_PAGES[n](); }
   (APP_PAGES[n] || (() => toast(n)))();
 }
@@ -408,7 +410,7 @@ function openGallery() {
   $('shBody').querySelector('[data-x]').onclick = () => { sfx('static'); toast('Dosya okunamıyor: IMG_0317.jpg'); };
   $('shBody').querySelector('[data-v]').onclick = () => { sfx('tap'); playFootage(); };
 }
-const CAPS = { selfie: '5 Kasım · 03:16', g317: '317', defter: 'Dedemin defteri — son sayfa', miners: 'Karagöl Bakır Ocağı, 1941', village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
+const CAPS = { harita: 'Dedemin defteri — maden haritası', selfie: '5 Kasım · 03:16', g317: '317', defter: 'Dedemin defteri — son sayfa', miners: 'Karagöl Bakır Ocağı, 1941', village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
 function vwOpen() { $('viewer').classList.add('on'); $('vwImg').style.display = 'none'; $('vwVid').style.display = 'none'; $('vwRec').style.display = 'none'; $('vwCap').textContent = ''; }
 function vwClose() { const v = $('vwVid'); try { v.pause(); } catch (e) {} v.onended = v.ontimeupdate = null; $('viewer').classList.remove('on'); }
 $('bVwClose').onclick = () => { sfx('tap'); if (footageOn) return; vwClose(); };
@@ -440,12 +442,12 @@ async function footageEnd() {
 const ENDS = {
   0: { ch: 'BÖLÜM 0', title: 'KİLİT', next: 'Bölüm 1 — Mesajlar', soon: 'Hazır', btn: 'BÖLÜM 1\'E GEÇ',
     text: 'Telefonun sahibi <b>Deniz Aydın</b>.<br>5 Kasım gecesi, dedesinin 1941\'de kapanan bakır ocağına girdi.<br>O geceden beri biri bu telefonu izliyor.<br><br><span style="color:#8a1c1c">Ve artık seni de biliyor.</span>' },
-  1: { ch: 'BÖLÜM 1', title: 'MESAJLAR', next: 'Bölüm 2 — Karagöl', soon: 'Yakında', btn: 'TELEFONA DÖN',
+  1: { ch: 'BÖLÜM 1', title: 'MESAJLAR', next: 'Bölüm 2 — Karagöl', soon: 'Hazır', btn: 'BÖLÜM 2\'YE GEÇ',
     text: '1941\'de altı kişi girdi. İki kişi çıktı.<br>Hasan Aydın 85 yıl bir sırrı sakladı.<br>Deniz o kapıyı açık bıraktı.<br><br><span style="color:#8a1c1c">Ve şimdi kapının bu tarafında<br>telefonu tutan tek kişi sensin.</span>' },
 };
 let endShown = 0;
 function endCard(n = 0) {
-  endShown = n; const d = ENDS[n], e = $('endcard');
+  endShown = n; const d = typeof ENDS[n] === 'function' ? ENDS[n]() : ENDS[n], e = $('endcard');
   $('ecCh').textContent = d.ch; $('ecTitle').textContent = d.title; $('ecText').innerHTML = d.text;
   $('ecNext').textContent = d.next; $('ecSoon').textContent = d.soon; $('bEcBack').textContent = d.btn;
   e.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => e.classList.add('show')));
@@ -454,6 +456,8 @@ function endCard(n = 0) {
 $('bEcBack').onclick = () => {
   sfx('tap'); const e = $('endcard'); e.classList.remove('show'); setTimeout(() => e.classList.remove('on'), 600); ambience('room');
   if (endShown === 0 && store.get('stage', null) === 'ch0done') setTimeout(startCh1, 1400);
+  if (endShown === 1 && store.get('stage', null) === 'ch1done') setTimeout(startCh2, 1400);
+  if (String(endShown).startsWith('S') && store.get('endings', []).length < 3) setTimeout(finalChoice, 900);
 };
 
 // ===================== BÖLÜM 1 — MESAJLAR =====================
@@ -680,4 +684,169 @@ const CH1_PAGES = {
   'Saat': () => sheet('Saat', `<div class="sec">ALARMLAR</div>${row('<span style="font-size:34px;font-weight:200">03:17</span><br><span class="red">UYAN. ORADAN ÇIK.</span>', 'her gün')}${row('<span style="font-size:34px;font-weight:200;color:#666">07:30</span><br><span class="mut">ilaçlar — dedem</span>', 'kapalı')}<p class="mut center" style="margin-top:14px">Alarm sahibi: Hasan Aydın'ın telefonundan aktarıldı.</p>`),
 };
 
-window.__kt = { S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard, startCh1, store, CLIPS, finale };
+// ===================== BÖLÜM 2 — KARAGÖL =====================
+function subsAt(lines, dur, t) {
+  const L = lines.map(l => l.length), tot = L.reduce((a, b) => a + b, 0); let acc = 0;
+  for (let i = 0; i < lines.length; i++) { acc += L[i]; if (t <= acc / tot * dur) return lines[i]; }
+  return lines[lines.length - 1];
+}
+function playAudio(src, lines, box) {
+  return new Promise(res => {
+    const au = new Audio(src); let done = false; const fin = () => { if (done) return; done = true; if (box) box.textContent = ''; res(); };
+    au.ontimeupdate = () => { if (box && lines) box.textContent = subsAt(lines, au.duration || 10, au.currentTime); };
+    au.onended = fin; au.onerror = fin; au.play().catch(() => { if (box && lines) { let k = 0; const iv = setInterval(() => { box.textContent = lines[k++] || ''; if (k > lines.length) { clearInterval(iv); fin(); } }, 2600); } else fin(); });
+  });
+}
+// tam ekran video (vwVid) — bitene kadar bekler
+function playVid(name, cap = '', rec = true) {
+  return new Promise(res => {
+    vwOpen(); footageOn = true; $('bVwClose').style.opacity = .15;
+    const v = $('vwVid'); v.poster = `media/${name}_poster.jpg`; v.src = `media/${name}.mp4`; v.style.display = 'block'; v.muted = false; v.currentTime = 0;
+    $('vwRec').style.display = rec ? 'flex' : 'none'; $('vwCap').textContent = cap;
+    v.ontimeupdate = () => { $('vwTc').textContent = '00:' + String(Math.floor(v.currentTime)).padStart(2, '0'); };
+    let done = false; const fin = () => { if (done) return; done = true; v.onended = v.ontimeupdate = null; vwClose(); footageOn = false; $('bVwClose').style.opacity = ''; res(); };
+    v.onended = fin; v.onerror = fin;
+    v.play().catch(() => { v.muted = true; v.play().catch(fin); });
+  });
+}
+function startCh2() {
+  if (store.get('stage', null) !== 'ch1done') return;
+  store.set('stage', 'ch2'); store.set('c2called', false);
+  setTimeout(dedeCall, 2500);
+}
+
+// --- dedenin araması ---
+const DEDE_LINES = ['Deniz? Kızım… sen misin?', '…Deniz?', 'Sen… sen Deniz değilsin. Kimsin sen?', 'O telefonu nerede buldun?', 'Dinle beni evlat. Onu bulduğun yere geri koymazsan, o seni takip eder.', 'Seksen beş yıl beni takip etti.', 'Haritayı defterde bıraktım. İki sol, bir sağ.', 'Ve sakın… sakın onun sesine kanma.', 'O herkesin sesini taklit eder. Benimkini bile.'];
+function dedeCall() {
+  if (S.view === 'app') closeSheet();
+  const c = $('callx'); $('cxName').textContent = 'Dedem 🤍'; $('cxAva').textContent = 'H'; $('cxSub').textContent = 'gelen arama…'; $('cxCap').textContent = '';
+  $('cxBtns').style.display = 'flex'; $('cxYes').style.display = ''; c.classList.add('on');
+  stopAmbience(); ringtone(true); vib([800, 400, 800, 400, 800]);
+  $('cxNo').onclick = () => { ringtone(false); vib(0); sfx('tap'); c.classList.remove('on'); ambience('room'); setTimeout(() => { banner('📞', 'Dedem 🤍', 'Cevapsız arama (2)', false, 'TELEFON'); setTimeout(dedeCall, 2500); }, 1500); };
+  $('cxYes').onclick = async () => {
+    ringtone(false); vib(0); sfx('tap'); $('cxYes').style.display = 'none'; $('cxNo').firstChild.textContent = '✕';
+    $('cxNo').onclick = null; let s = 0; const tick = setInterval(() => { s++; $('cxSub').textContent = `00:${String(s).padStart(2, '0')}`; }, 1000);
+    ambience('rain');
+    await playAudio('media/audio/dede_ara.mp3', DEDE_LINES, $('cxCap'));
+    clearInterval(tick); $('cxSub').textContent = 'Arama sona erdi'; $('cxBtns').style.display = 'none'; sfx('static');
+    await sleep(1300); c.classList.remove('on'); ambience('room'); store.set('c2called', true);
+    await sleep(2500);
+    banner('?', 'Bilinmeyen Numara', '📹 Ben de onu izliyorum.', true); sfx('darknotif'); vib([200, 100, 200]);
+    await sleep(2200);
+    await playVid('v_dede', '(Karagöl · Aydın evi · şimdi)');
+    $('screen').classList.add('glitch'); sfx('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 700);
+    await sleep(1600);
+    banner('🗺️', 'Harita', 'Kaydedilmiş rota: Eski Bakır Ocağı', false, 'HARİTA'); sfx('notif'); badges['Harita'] = 1; buildHome();
+  };
+}
+
+// --- maden ---
+const MN = { j: 0, alive: false };
+const ROUTE = ['L', 'L', 'R'];
+function mine(on) { $('mine').classList.toggle('on', on); MN.alive = on; if (on) S.view = 'mine'; else S.view = 'home'; }
+function mnBg(key, flip) { const b = $('mnBg'); b.style.backgroundImage = `url(${MEDIA[key]})`; b.style.transform = flip ? 'scaleX(-1)' : ''; b.classList.remove('drift'); void b.offsetWidth; b.classList.add('drift'); }
+function mnTop(t) { $('mnStep').textContent = t; $('mnBat').textContent = `🔋 ${S.bat}%`; }
+function mnBtns(list) {
+  const box = $('mnBtns'); box.innerHTML = '';
+  return new Promise(res => list.forEach(([label, val, cls]) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = () => { sfx('key'); vib(8); box.innerHTML = ''; res(val); }; box.appendChild(b); }));
+}
+async function flicker(n = 6) { const d = $('mnDark'); for (let i = 0; i < n; i++) { d.style.opacity = Math.random() < 0.5 ? 0.92 : 0.15; await sleep(70 + Math.random() * 140); } d.style.opacity = 0.15; }
+async function enterMine() {
+  closeSheet(); mine(true); stopAmbience(); ambience('static');
+  $('mnDark').style.opacity = 1; mnTop('KARAGÖL · ESKİ BAKIR OCAĞI'); $('mnCap').textContent = 'Rota yükleniyor…';
+  await sleep(1400); $('mnCap').textContent = '';
+  await playVid('v_tunel', '(Deniz\'in rotası · 5 Kasım · 03:05)');
+  $('mnDark').style.opacity = 0.15;
+  MN.j = 0;
+  while (MN.j < 3) {
+    const j = MN.j; mnBg('ayrim', j === 1); mnTop(`AYRIM ${j + 1}/3`);
+    if (j === 2) {
+      $('mnCap').textContent = '';
+      await sleep(900); sfx('darknotif'); vib([200, 100, 200]);
+      $('mnCap').innerHTML = '<span class="red">🎤 Deniz — sesli mesaj</span>';
+      await sleep(600);
+      await playAudio('media/audio/deniz_taklit.mp3', ['"Buradayım! Soldaki tünelden gel!"', '"Ne olur çabuk… çok karanlık burası!"', '"Sola gel, sola!"'], $('mnCap'));
+    }
+    $('mnCap').textContent = ['Su sesi iki yandan da geliyor.', 'Raylar ikiye ayrılıyor.', 'Dedenin sesi kulağında: "Onun sesine kanma."'][j];
+    const pick = await mnBtns([['◀ SOL', 'L'], ['SAĞ ▶', 'R']]);
+    if (pick === ROUTE[j]) { sfx('whoosh'); $('mnCap').textContent = ''; await flicker(3); MN.j++; continue; }
+    // yanlış yol
+    S.bat = Math.max(3, S.bat - 6); clock(); mnTop(`AYRIM ${j + 1}/3`);
+    if (j === 2) {
+      $('mnCap').textContent = '"Deniz?"'; await sleep(1400);
+      const sc = $('scare'); sc.innerHTML = `<img src="${MEDIA.scare}" style="width:100%;height:100%;object-fit:cover">`; sc.classList.add('on'); sfx('sting'); vib([400]);
+      await sleep(260); sc.classList.remove('on'); sc.innerHTML = ''; await flicker(8);
+      $('mnCap').textContent = 'O Deniz değildi. Geri dönüyorsun…';
+    } else { sfx('error'); sfx('heart'); await flicker(6); $('mnCap').textContent = 'Çıkmaz. Su yükseliyor. Geri dönüyorsun…'; }
+    await sleep(2200);
+  }
+  // Deniz
+  mnBg('denizArka'); mnTop('GALERİ 317\'YE YAKIN'); $('mnCap').textContent = 'Fenerin ışığında biri duruyor. Yeşil yağmurluk…';
+  await sleep(1200);
+  await mnBtns([['"Deniz?" diye seslen', 1], ['Omzuna dokun', 2]]);
+  await playVid('v_deniz', '', true);
+  // kamera
+  stopAmbience(); $('mnBg').style.backgroundImage = 'none'; $('mnDark').style.opacity = 1; mnTop('FENER SÖNDÜ');
+  $('mnCap').textContent = 'Fener söndü. Görebilmek için kamerayı kullan.'; await sleep(1200);
+  $('mnDark').style.opacity = 0;
+  for (let shot = 0; shot < 3; shot++) {
+    $('mnBg').style.backgroundImage = 'none'; $('mine').classList.add('camui'); mnTop('KAMERA · GECE MODU');
+    await mnBtns([['', 1, 'shutter']]);
+    const fl = document.createElement('div'); fl.className = 'flash'; $('mine').appendChild(fl); sfx('tap'); setTimeout(() => fl.remove(), 400);
+    if (shot === 2) { $('mine').classList.remove('camui'); await playVid('v_figur', '', true); break; }
+    mnBg(shot === 0 ? 'figUzak' : 'figYakin'); $('mnBg').classList.add('photo'); sfx('heart');
+    $('mnCap').textContent = shot === 0 ? 'Fotoğrafta… biri var.' : 'Daha yakın.';
+    await sleep(2300); $('mnBg').classList.remove('photo'); $('mnCap').textContent = shot === 0 ? 'Tekrar çek.' : 'Bir daha çekme. Ya da çek.';
+  }
+  $('mine').classList.remove('camui');
+  $('screen').classList.add('glitch'); sfx('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 800);
+  $('mnDark').style.opacity = 1; mnTop('RAYLAR BİTTİ'); $('mnCap').textContent = 'Raylar bitti. Önünde taştan bir kapı.'; await sleep(2000);
+  await playVid('v_kapi', '(317)');
+  store.set('c2door', true);
+  finalChoice();
+}
+async function finalChoice() {
+  mine(true); stopAmbience(); ambience('room');
+  mnBg('kapiIc'); $('mnBg').classList.remove('drift'); $('mnDark').style.opacity = 0.1; mnTop('317');
+  $('mnCap').innerHTML = 'Kapı aralık. İçeride beş kişi sırtları dönük bekliyor.<br><span class="red">Telefon elinde titriyor.</span>';
+  const c = await mnBtns([['📱 Telefonu eşiğe bırak', 'A'], ['🚪 Kapıyı kapat', 'B'], ['🔓 Kapıyı aç', 'C']]);
+  const e = store.get('endings', []); if (!e.includes(c)) { e.push(c); store.set('endings', e); }
+  store.set('stage', 'ch2done');
+  if (c === 'A') {
+    $('mnCap').textContent = 'Telefonu taşın üstüne bıraktın. Ekran kendiliğinden karardı.'; await sleep(2600);
+    $('mnBg').style.backgroundImage = 'none'; $('mnDark').style.opacity = 1; mnTop(''); $('mnCap').textContent = '3 gün sonra'; await sleep(2200);
+    sfx('notif'); $('mnCap').innerHTML = '<span style="color:#30d158">🎤 Annem — sesli mesaj</span>'; await sleep(900);
+    await playAudio('media/audio/anne_bulundu.mp3', ['Deniz bulundu! Kızım bulundu!', 'Yayla yolunun kenarında… İyi, çok şükür iyi.', 'Ama hiçbir şey hatırlamıyor.', 'Sadece bir şey diyor… telefonumu biri geri koydu, diyor.'], $('mnCap'));
+    await sleep(800);
+  } else if (c === 'B') {
+    sfx('thunder'); vib([600]); $('mnCap').textContent = 'Taşı var gücünle ittin. Kapı kapandı.'; await flicker(10);
+    $('mnDark').style.opacity = 1; await sleep(1500); $('mnCap').textContent = 'İçeriden kimse ses vermedi.'; await sleep(2500);
+  } else {
+    $('mnCap').textContent = 'Kapıyı sonuna kadar açtın.'; await sleep(1500);
+    $('mnDark').style.opacity = 1; stopAmbience(); await sleep(1000);
+    await playAudio('media/audio/ses_tesekkur.mp3', ['"Teşekkürler…"', '"Artık sıra sende."'], $('mnCap'));
+    mine(false); await jumpScare(); mine(true);
+  }
+  mine(false); endCard('S' + c);
+}
+const endHead = () => `Sonlar: ${store.get('endings', []).length}/3`;
+Object.assign(ENDS, {
+  SA: () => ({ ch: 'SON 1 · GERİ KOYDUN', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+    text: 'Deniz o sabah yayla yolunun kenarında bulundu.<br>Hiçbir şey hatırlamıyor.<br>Telefon hâlâ 317\'nin eşiğinde duruyor.<br><br><span style="color:#8a1c1c">Bazı geceler, 03:17\'de titriyor.</span>' }),
+  SB: () => ({ ch: 'SON 2 · SESSİZLİK', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+    text: 'Kapı 85 yıl sonra yeniden kapandı.<br>Deniz geri dönmedi.<br>Hasan Aydın o gece uykusunda öldü.<br><br><span style="color:#8a1c1c">Yüzünde bir gülümseme vardı.</span>' }),
+  SC: () => ({ ch: 'SON 3 · TEŞEKKÜRLER', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+    text: 'Ertesi sabah Karagöl yolunda, çamurun içinde bir telefon bulundu.<br>Ekranında yeni bir kilit vardı.<br><br><span style="color:#8a1c1c">Arka planda senin fotoğrafın.</span>' }),
+});
+const CH2_PAGES = {
+  'Harita': () => {
+    const door = store.get('c2door', false), called = store.get('c2called', false);
+    sheet('Harita', `<div class="big">📍</div><p class="center"><b>Eski Bakır Ocağı</b><br><span class="mut">Karagöl yaylası · 1.920 m</span></p>
+      <button class="row-btn" id="hMap">${row('🗺️ Dedemin haritası', 'aç ›')}</button>${row('Kaydedilmiş rota', 'Deniz · 5 Kasım 03:05')}${row('Rota durumu', 'YARIDA KESİLDİ', 'red')}
+      <button class="rp-btn" id="hGo" style="display:block;margin:22px auto 0">${door ? '▶ 317\'ye dön' : '▶ Rotayı izle'}</button>${called ? '' : '<p class="mut center" style="margin-top:10px">Biri seni arıyor olabilir.</p>'}`);
+    $('hMap').onclick = () => { sfx('tap'); viewImage('harita'); };
+    $('hGo').onclick = () => { sfx('tap'); if (!called) { toast('Rota kilitli. Önce dedenin aramasını bekle.'); return; } if (door) { closeSheet(); finalChoice(); } else enterMine(); };
+  },
+};
+
+window.__kt = { startCh2, dedeCall, enterMine, finalChoice, MN, S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard, startCh1, store, CLIPS, finale };
