@@ -31,6 +31,7 @@ jobs:
         run: |
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's/<activity/<activity android:screenOrientation="portrait"/' $M
+          sed -i 's#</manifest>#<uses-permission android:name="android.permission.CAMERA" /><uses-feature android:name="android.hardware.camera" android:required="false" /></manifest>#' $M
           S=android/app/src/main/res/values/styles.xml
           sed -i 's#<item name="windowActionBar">false</item>#<item name="windowActionBar">false</item><item name="android:windowFullscreen">true</item>#' $S
           G=android/app/build.gradle

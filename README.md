@@ -6,7 +6,8 @@ Telefonun ekranında oynanan karanlık bir gizem / gerilim oyunu.
 
 - **Bölüm 0 — Kilit:** Telefonun şifresini hikâyedeki ipuçlarıyla çöz.
 - **Bölüm 1 — Mesajlar:** Bozuk ses kayıtlarını onar, gizli sohbetleri aç, Bilinmeyen Numara ile konuş.
-- **Bölüm 2 — Karagöl (final):** Dedenin araması, madende yön bulmacası, taklit edilen ses, kamera ve 3 farklı son.
+- **Bölüm 2 — Karagöl:** Dedenin araması, madende yön bulmacası, taklit edilen ses, kamera ve 3 farklı son.
+- **Bölüm 3 — Senin Telefonun:** Telefon yeniden başlar ve adını öğrenir. Şifreli defter, arşiv belgesi ve görüntülü arama.
 
 🎧 Kulaklık tak. Işıkları kapat. Yalnız oyna.
 

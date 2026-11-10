@@ -1,4 +1,5 @@
 // ===== KAYIP TELEFON — Bölüm 0: Kilit =====
+import { checkUpdate, openUrl, VERSION } from './update.js';
 import { initAudio, sfx, ambience, stopAmbience, ringtone, whisper } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -10,7 +11,7 @@ const PIN = '070541';
 const S = { attempts: 0, called: false, lockUntil: 0, entry: '', view: 'lock', bat: 31, mins: 3 * 60 + 17, unlocked: false, flipped: false, sawVideo: false };
 
 // ---------- medya (varsa gerçek, yoksa yer tutucu) ----------
-const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4', selfie: 'media/selfie_maden.jpg', g317: 'media/galeri317.jpg', defter: 'media/defter_son.jpg', miners: 'media/madenciler.jpg', dedeWin: 'media/dede_pencere.jpg', harita: 'media/harita.jpg', ayrim: 'media/tunel_ayrim.jpg', denizArka: 'media/deniz_arka.jpg', kapiIc: 'media/kapi_ic.jpg', figUzak: 'media/figur_uzak.jpg', figYakin: 'media/figur_yakin.jpg' };
+const MEDIA = { wallpaper: 'media/wallpaper.jpg', oldphoto: 'media/oldphoto.jpg', intro: 'media/intro.mp4', scare: 'media/scare.jpg', village: 'media/village.jpg', notebook: 'media/notebook.jpg', mine: 'media/mine.jpg', forest: 'media/forest.mp4', selfie: 'media/selfie_maden.jpg', g317: 'media/galeri317.jpg', defter: 'media/defter_son.jpg', miners: 'media/madenciler.jpg', dedeEv: 'media/dede_ev.jpg', defterSifre: 'media/defter_sifre.jpg', hastane: 'media/deniz_hastane.jpg', eceImg: 'media/ece.jpg', dedeWin: 'media/dede_pencere.jpg', harita: 'media/harita.jpg', ayrim: 'media/tunel_ayrim.jpg', denizArka: 'media/deniz_arka.jpg', kapiIc: 'media/kapi_ic.jpg', figUzak: 'media/figur_uzak.jpg', figYakin: 'media/figur_yakin.jpg' };
 const has = {};
 function probeImg(key) { return new Promise(res => { const i = new Image(); i.onload = () => { has[key] = true; res(true); }; i.onerror = () => res(false); i.src = MEDIA[key]; }); }
 async function probeMedia() {
@@ -70,6 +71,8 @@ setInterval(() => { if (S.view && $('s-device').classList.contains('show') && S.
 if (store.get('stage', null)) $('bContinue').classList.remove('hidden');
 $('bStart').onclick = () => { initAudio(); sfx('tap'); store.set('stage', null); startIntro(); };
 $('bContinue').onclick = () => { initAudio(); sfx('tap'); enterDevice(true); };
+$('tVer').textContent = 'v' + VERSION;
+checkUpdate().then(u => { if (!u) return; $('updV').textContent = 'v' + u.version; $('upd').classList.remove('hidden'); $('bUpd').onclick = () => { sfx('tap'); openUrl(u.url); }; });
 document.addEventListener('pointerdown', () => { initAudio(); }, { once: true });
 setTimeout(() => { initAudio(); }, 0);
 document.addEventListener('click', function once() { ambience('rain'); document.removeEventListener('click', once); });
@@ -142,7 +145,7 @@ function endIntro() { if (introEnded) return; introEnded = true; introStop = tru
 function enterDevice(resume) {
   scr('s-device'); ambience('rain');
   clock();
-  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') !== 'home'; view('home'); buildHome(); ambience('room'); if (store.get('stage') === 'ch0done') setTimeout(startCh1, 1500); if (store.get('stage') === 'ch1done') setTimeout(startCh2, 1500); if (store.get('stage') === 'ch2' && !store.get('c2called', false)) setTimeout(dedeCall, 2500); return; }
+  if (resume && store.get('stage', null)) { S.unlocked = true; S.sawVideo = store.get('stage') !== 'home'; view('home'); buildHome(); ambience('room'); if (store.get('stage') === 'ch0done') setTimeout(startCh1, 1500); if (store.get('stage') === 'ch1done') setTimeout(startCh2, 1500); if (store.get('stage') === 'ch2' && !store.get('c2called', false)) setTimeout(dedeCall, 2500); if (store.get('stage') === 'ch2done') setTimeout(startCh3, 1500); if (store.get('stage') === 'ch3') setTimeout(resumeCh3, 1500); return; }
   view('lock'); buildNotifs();
   setTimeout(() => { if (S.view === 'lock' || S.view === 'pin') darkNotif(); }, 7000);
   setTimeout(() => { if (!S.called && !S.unlocked && (S.view === 'lock' || S.view === 'pin')) incomingCall(); }, 65000);
@@ -388,8 +391,9 @@ const APP_PAGES = {
 };
 function openApp(n) {
   const st = store.get('stage', null) || '';
+  if (st.startsWith('ch3') && CH3_PAGES[n]) { badges[n] = 0; buildHome(); return CH3_PAGES[n](); }
   if (st.startsWith('ch2') && CH2_PAGES[n]) { badges[n] = 0; buildHome(); return CH2_PAGES[n](); }
-  const ch1 = ['ch1', 'ch1done'].includes(st) || st.startsWith('ch2');
+  const ch1 = ['ch1', 'ch1done'].includes(st) || st.startsWith('ch2') || st.startsWith('ch3');
   if (ch1 && CH1_PAGES[n]) { badges[n] = 0; buildHome(); return CH1_PAGES[n](); }
   (APP_PAGES[n] || (() => toast(n)))();
 }
@@ -411,7 +415,7 @@ function openGallery() {
   $('shBody').querySelector('[data-x]').onclick = () => { sfx('static'); toast('Dosya okunamıyor: IMG_0317.jpg'); };
   $('shBody').querySelector('[data-v]').onclick = () => { sfx('tap'); playFootage(); };
 }
-const CAPS = { harita: 'Dedemin defteri — maden haritası', selfie: '5 Kasım · 03:16', g317: '317', defter: 'Dedemin defteri — son sayfa', miners: 'Karagöl Bakır Ocağı, 1941', village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
+const CAPS = { dedeEv: 'Aydın evi · dün gece', defterSifre: 'Dedemin defteri — son sayfa', harita: 'Dedemin defteri — maden haritası', selfie: '5 Kasım · 03:16', g317: '317', defter: 'Dedemin defteri — son sayfa', miners: 'Karagöl Bakır Ocağı, 1941', village: 'Dedemin köyü 🌿', notebook: 'Dedemin defteri. 1941.', wallpaper: 'Dedemle 🤍', oldphoto: 'Dedem, 20 yaşında.' };
 function vwOpen() { $('viewer').classList.add('on'); $('vwImg').style.display = 'none'; $('vwVid').style.display = 'none'; $('vwRec').style.display = 'none'; $('vwCap').textContent = ''; }
 function vwClose() { const v = $('vwVid'); try { v.pause(); } catch (e) {} v.onended = v.ontimeupdate = null; $('viewer').classList.remove('on'); }
 $('bVwClose').onclick = () => { sfx('tap'); if (footageOn) return; vwClose(); };
@@ -458,7 +462,8 @@ $('bEcBack').onclick = () => {
   sfx('tap'); const e = $('endcard'); e.classList.remove('show'); setTimeout(() => e.classList.remove('on'), 600); ambience('room');
   if (endShown === 0 && store.get('stage', null) === 'ch0done') setTimeout(startCh1, 1400);
   if (endShown === 1 && store.get('stage', null) === 'ch1done') setTimeout(startCh2, 1400);
-  if (String(endShown).startsWith('S') && store.get('endings', []).length < 3) setTimeout(finalChoice, 900);
+  if (String(endShown).startsWith('S') && store.get('stage', null) === 'ch2done') setTimeout(startCh3, 1400);
+  if (endShown === 'X3bad') setTimeout(videoCall, 1400);
 };
 
 // ===================== BÖLÜM 1 — MESAJLAR =====================
@@ -867,11 +872,11 @@ async function finalChoice() {
 }
 const endHead = () => `Sonlar: ${store.get('endings', []).length}/3`;
 Object.assign(ENDS, {
-  SA: () => ({ ch: 'SON 1 · GERİ KOYDUN', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+  SA: () => ({ ch: 'SON 1 · GERİ KOYDUN', title: 'KARAGÖL', next: 'Bölüm 3 — Senin Telefonun', soon: endHead() + ' · diğer sonlar: Harita → 317', btn: store.get('stage', null) === 'ch2done' ? 'BÖLÜM 3\'E GEÇ' : 'TELEFONA DÖN',
     text: 'Deniz o sabah yayla yolunun kenarında bulundu.<br>Hiçbir şey hatırlamıyor.<br>Telefon hâlâ 317\'nin eşiğinde duruyor.<br><br><span style="color:#8a1c1c">Bazı geceler, 03:17\'de titriyor.</span>' }),
-  SB: () => ({ ch: 'SON 2 · SESSİZLİK', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+  SB: () => ({ ch: 'SON 2 · SESSİZLİK', title: 'KARAGÖL', next: 'Bölüm 3 — Senin Telefonun', soon: endHead() + ' · diğer sonlar: Harita → 317', btn: store.get('stage', null) === 'ch2done' ? 'BÖLÜM 3\'E GEÇ' : 'TELEFONA DÖN',
     text: 'Kapı 85 yıl sonra yeniden kapandı.<br>Deniz geri dönmedi.<br>Hasan Aydın o gece uykusunda öldü.<br><br><span style="color:#8a1c1c">Yüzünde bir gülümseme vardı.</span>' }),
-  SC: () => ({ ch: 'SON 3 · TEŞEKKÜRLER', title: 'KARAGÖL', next: endHead(), soon: store.get('endings', []).length < 3 ? 'Diğer sonları da gör' : 'Tüm sonları gördün', btn: store.get('endings', []).length < 3 ? 'BAŞKA BİR SON' : 'TELEFONA DÖN',
+  SC: () => ({ ch: 'SON 3 · TEŞEKKÜRLER', title: 'KARAGÖL', next: 'Bölüm 3 — Senin Telefonun', soon: endHead() + ' · diğer sonlar: Harita → 317', btn: store.get('stage', null) === 'ch2done' ? 'BÖLÜM 3\'E GEÇ' : 'TELEFONA DÖN',
     text: 'Ertesi sabah Karagöl yolunda, çamurun içinde bir telefon bulundu.<br>Ekranında yeni bir kilit vardı.<br><br><span style="color:#8a1c1c">Arka planda senin fotoğrafın.</span>' }),
 });
 const CH2_PAGES = {
@@ -885,4 +890,186 @@ const CH2_PAGES = {
   },
 };
 
-window.__kt = { startCh2, dedeCall, enterMine, finalChoice, MN, S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard, startCh1, store, CLIPS, finale };
+// ===================== BÖLÜM 3 — SENİN TELEFONUN =====================
+const NAME = () => store.get('pname', 'Sen');
+const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function startCh3() { if (store.get('stage', null) !== 'ch2done') return; store.set('stage', 'ch3'); reboot(); }
+function resumeCh3() {
+  if (!store.get('pname', null)) return reboot();
+  if (store.get('c3read', false)) return setTimeout(videoCall, 3000);
+  banner('💬', 'Deniz', `${esc(NAME())}? Orada mısın?`, false, 'MESAJLAR'); sfx('notif'); badges['Mesajlar'] = 1; buildHome();
+}
+async function reboot() {
+  if (S.view === 'app') closeSheet(); mine(false);
+  $('screen').classList.add('glitch'); sfx('glitch'); sfx('static'); await sleep(900); $('screen').classList.remove('glitch');
+  const b = $('boot'), I = $('btIn'); I.innerHTML = ''; b.classList.add('on'); stopAmbience();
+  await sleep(1400); I.innerHTML = '<div class="bt-logo">◐</div><div class="bt-bar"><i></i></div>'; await sleep(2600);
+  I.innerHTML = `<p class="bt-q">Bu telefonun yeni sahibi kim?</p><input id="btName" maxlength="16" placeholder="Adın" autocomplete="off"><button class="t-btn" id="btOk">DEVAM</button><small>Adın yalnızca bu telefonda, oyunun içinde kullanılır.</small>`;
+  await new Promise(res => { $('btOk').onclick = () => { const v = $('btName').value.trim(); if (!v) { sfx('error'); vib(60); return; } sfx('tap'); store.set('pname', v.slice(0, 16)); res(); }; });
+  I.innerHTML = `<p class="bt-q">Hoş geldin, ${esc(NAME())}.</p>`; await sleep(1800);
+  I.innerHTML += '<p class="bt-q red">Seni bekliyorduk.</p>'; sfx('sting'); await sleep(2000);
+  b.classList.remove('on'); view('home'); buildHome(); ambience('room');
+  await sleep(2500); banner('?', 'Bilinmeyen Numara', `Merhaba ${esc(NAME())}.`, true); sfx('darknotif'); vib([200, 100, 200]);
+  await sleep(4500); banner('💬', 'Deniz', `${esc(NAME())}? Sen misin?`, false, 'MESAJLAR'); sfx('notif'); badges['Mesajlar'] = 1; buildHome();
+}
+// --- genel sohbet motoru ---
+function makeChat(title, inCls = '') {
+  const C = { msgs: [], open: false, running: false, pending: null, vw: {} };
+  const bub = ([k, v]) => {
+    if (k === 't') return `<div class="c-time">${v}</div>`;
+    if (k === 'o') return `<div class="msg out">${v}</div>`;
+    if (k === 'img') return `<div class="msg img in"><img src="${MEDIA[v]}" data-k="${v}"></div>`;
+    if (k === 'vid') return `<div class="msg img in vidb" data-v="${v}"><img src="media/${v}_poster.jpg"><span>▶</span></div>`;
+    return `<div class="msg in ${inCls}">${v}</div>`;
+  };
+  const wire = () => {
+    $('shBody').querySelectorAll('.msg img[data-k]').forEach(im => im.onclick = () => { sfx('tap'); viewImage(im.dataset.k); });
+    $('shBody').querySelectorAll('.vidb').forEach(el => el.onclick = async () => { sfx('tap'); const n = el.dataset.v; await playVid(n, '', false); if (C.vw[n]) { C.vw[n](); delete C.vw[n]; } });
+  };
+  const scroll = () => { const b = $('shBody'); if (b) b.scrollTop = b.scrollHeight; };
+  C.render = () => {
+    sheet(title, `<div class="chat">${C.msgs.map(bub).join('')}<div class="typing hidden" id="typing"><i></i><i></i><i></i></div></div><div class="choices" id="choices"></div>`);
+    C.open = true; wire(); if (C.pending) C.showChoices(); scroll(); sheetCleanup = () => { C.open = false; };
+  };
+  C.push = (k, v) => {
+    C.msgs.push([k, v]);
+    if (C.open) { $('typing').insertAdjacentHTML('beforebegin', bub([k, v])); wire(); scroll(); }
+    if (k !== 'o' && k !== 't') { sfx('notif'); vib(30); if (!C.open) { banner('💬', title, k === 'img' ? '📷 Fotoğraf' : k === 'vid' ? '📹 Video' : v, false, 'MESAJLAR'); badges['Mesajlar'] = 1; buildHome(); } }
+  };
+  C.say = async (text, wait) => { if (C.open) { $('typing').classList.remove('hidden'); scroll(); } await sleep(wait ?? Math.min(3000, 700 + text.length * 40)); if (C.open) $('typing').classList.add('hidden'); C.push('i', text); await sleep(450); };
+  C.showChoices = () => { const box = $('choices'); if (!box || !C.pending) return; box.innerHTML = ''; C.pending.opts.forEach((o, i) => { const b = document.createElement('button'); b.textContent = o; b.onclick = () => { sfx('key'); const p = C.pending; C.pending = null; box.innerHTML = ''; C.push('o', esc(o)); p.res(i); }; box.appendChild(b); }); scroll(); };
+  C.choose = (opts) => new Promise(res => { C.pending = { opts, res }; if (C.open) C.showChoices(); });
+  C.waitVideo = (n) => new Promise(res => { C.vw[n] = res; });
+  return C;
+}
+const DZ = makeChat('Deniz'), ECEC = makeChat('Ece 🌻');
+const waitFlag = (k) => new Promise(res => { const iv = setInterval(() => { if (store.get(k, false)) { clearInterval(iv); res(); } }, 500); });
+async function runDeniz() {
+  if (DZ.running) return; DZ.running = true; DZ.msgs.length = 0; DZ.render();
+  const n = esc(NAME());
+  DZ.push('t', 'Bugün · 03:17');
+  await DZ.say(`${n}? Sen misin?`);
+  await DZ.say('Numaranı Ece buldu. Telefonumu sen bulmuşsun.');
+  await DZ.say('Hastanedeyim. Hiçbir şey hatırlamıyorum… ama o burada.');
+  await DZ.say('Bak. Bunu az önce çektim.');
+  DZ.push('vid', 'v_hastane'); await DZ.waitVideo('v_hastane');
+  let c = await DZ.choose(['Arkanda biri vardı!', 'İyi misin?']);
+  await DZ.say(c === 0 ? 'Biliyorum. Her gece kapının önünde duruyor.' : 'Değilim. Her gece kapımın önünde biri duruyor.');
+  await DZ.say('Dedem dün gece öldü.', 2200);
+  DZ.push('img', 'dedeEv'); await sleep(900);
+  await DZ.say('Evinde telefonun ahizesi asılı kalmış.');
+  await DZ.say(`Son aradığı numara… seninmiş, ${n}.`, 2400);
+  $('screen').classList.add('glitch'); sfx('glitch'); setTimeout(() => $('screen').classList.remove('glitch'), 600);
+  await DZ.say('Defterinin son sayfasını buldum. Okuyamıyorum, her şey ters yazılmış.');
+  DZ.push('img', 'defterSifre'); addGx('defterSifre');
+  await DZ.say('Ne yazıyor? Sen okuyabiliyor musun?');
+  for (;;) {
+    c = await DZ.choose(['"Kapıyı aç."', '"Adını söyle."', '"Geri koy."']);
+    if (c === 1) break;
+    await DZ.say('Emin misin? Ayna gibi düşün… tekrar bak.');
+  }
+  await DZ.say('"Adını söyle. Adı olan şey kapıdan geçemez."');
+  await DZ.say('Ama onun adı yok ki. Hiçbir kayıtta yok.');
+  await DZ.say('Ece arşivden bir şey buldu. E-postana yönlendirdim, hemen bak!');
+  store.set('c3mail', true); badges['E-posta'] = 1; buildHome();
+  setTimeout(() => { banner('✉️', 'E-posta', 'İLET: Karagöl 1941 — kaza zabtı (2 ek)', false, 'E-POSTA'); sfx('notif'); }, 1500);
+  await waitFlag('c3read');
+  await sleep(1500);
+  await DZ.say('Buldun mu? Fotoğrafta kaç kişi var, zabıtta kaç kişi?');
+  await DZ.say('Fazla olan… o.', 2000);
+}
+async function eceScene() {
+  if (store.get('c3ece', false)) return; store.set('c3ece', true);
+  await sleep(3500);
+  banner('💬', 'Ece 🌻', 'Biri camıma vuruyor. 3. kattayım.', false, 'MESAJLAR'); sfx('notif'); vib([300, 150, 300]);
+  await sleep(2600);
+  if (S.view === 'app') closeSheet();
+  await playVid('v_ece', '(Ece · canlı)', true);
+  ECEC.msgs.length = 0;
+  ECEC.push('t', 'Şimdi'); ECEC.push('i', 'Gördün mü?!'); ECEC.push('i', 'El izi dışarıda. DIŞARIDA.'); ECEC.push('i', `${esc(NAME())}, adını bulduysan söyle ona. Çabuk!`);
+  await sleep(4000);
+  videoCall();
+}
+function openArchive() {
+  sheet('E-posta', `<div class="mail"><div class="mh"><b>Ece Yılmaz</b> <span class="mut">→ Deniz Aydın → sen</span><br><b>İLET: Karagöl 1941 — kaza zabtı</b></div>
+    <p>Deniz, Kültür Arşivi'nden gelen belgeler bunlar. Fotoğrafın arkasında da isimler yazıyormuş, onu da tarattım.<br>Bir şey tutmuyor. Bak.<br>— Ece</p>
+    <button class="att" id="aZ">📄 kaza_zabti_1941.pdf</button><button class="att" id="aF">🖼️ madenciler_on.jpg</button><button class="att" id="aB">🖼️ madenciler_arka.jpg</button></div>`);
+  const seen = new Set(store.get('c3seen', []));
+  const mark = (k) => { seen.add(k); store.set('c3seen', [...seen]); if (seen.has('z') && seen.has('b') && !store.get('c3read', false)) { store.set('c3read', true); eceScene(); } };
+  $('aZ').onclick = () => { sfx('tap'); mark('z'); docView(`<div class="doc type"><div class="dh">KARAGÖL BAKIR OCAĞI<br>KAZA ZABTI</div><p>Tarih: 14 Eylül 1941<br>Mahal: 317 numaralı galeri</p><p><u>Vardiya defterine kayıtlı işçiler (7 kişi):</u></p><ol><li>Hasan Aydın — <i>kurtuldu</i></li><li>Remzi Kaya — göçükte kaldı</li><li>Cemal Öztürk — göçükte kaldı</li><li>İsmail Şen — göçükte kaldı</li><li>Rıza Demir — göçükte kaldı</li><li>Kâzım Yıldız — göçükte kaldı</li><li>Ahmet Koç — o gün ocağa girmedi (hasta)</li></ol><p>Not: Kurtulan Hasan Aydın, ocaktan <b>"yanında biriyle"</b> çıktığını beyan etmiştir. Vardiyada kayıtlı başka işçi bulunmamaktadır. Beyan, şok hali olarak değerlendirilmiştir.</p><p class="zsig">Ocak Müdürü<br>(imza)</p></div>`); };
+  $('aF').onclick = () => { sfx('tap'); viewImage('miners'); };
+  $('aB').onclick = () => { sfx('tap'); mark('b'); docView(`<div class="doc card"><div class="hand2">Karagöl, Ağustos 1941<br><br>Ayaktakiler, soldan sağa:<br>Ahmet · Remzi · Cemal · Hasan · İsmail · Yusuf<br><br>Önde oturanlar:<br>Rıza · Kâzım</div><div class="stamp2">FOTO KARADENİZ</div></div>`); };
+}
+function docView(html) { vwOpen(); const d = document.createElement('div'); d.className = 'docwrap'; d.innerHTML = html; $('viewer').appendChild(d); const cl = $('bVwClose').onclick; $('bVwClose').onclick = () => { d.remove(); $('bVwClose').onclick = cl; sfx('tap'); vwClose(); }; }
+
+// --- görüntülü arama ---
+let camStream = null;
+function stopCam() { try { camStream && camStream.getTracks().forEach(t => t.stop()); } catch (e) {} camStream = null; }
+function videoCall() {
+  if (S.view === 'app') closeSheet();
+  const c = $('callx'); $('cxName').textContent = 'Bilinmeyen Numara'; $('cxAva').textContent = '?'; $('cxSub').textContent = '📹 görüntülü arama…'; $('cxCap').textContent = '';
+  $('cxBtns').style.display = 'flex'; $('cxYes').style.display = ''; c.classList.add('on'); stopAmbience(); ringtone(true); vib([800, 400, 800, 400, 800]);
+  $('cxNo').onclick = () => { ringtone(false); sfx('tap'); $('cxSub').textContent = 'Reddedilemiyor.'; sfx('glitch'); vib(200); setTimeout(() => { $('cxSub').textContent = '📹 görüntülü arama…'; ringtone(true); }, 1500); };
+  $('cxYes').onclick = () => { ringtone(false); vib(0); sfx('tap'); c.classList.remove('on'); camConsent(); };
+}
+function camConsent() {
+  const v = $('vcall'); v.classList.add('on'); v.classList.remove('nocam'); $('vcAsk').innerHTML = ''; $('vcFig').className = ''; $('vcFig').style.removeProperty('opacity'); $('vcCap').innerHTML = '';
+  $('vcAsk').innerHTML = `<div class="consent"><b>Bu sahnede ön kameran kullanılabilir.</b><p>Görüntü kaydedilmez ve hiçbir yere gönderilmez. İstersen kamerasız da oynayabilirsin.</p><button class="t-btn" id="ccYes">KAMERAYI AÇ</button><button class="t-btn ghost" id="ccNo">KAMERASIZ DEVAM</button></div>`;
+  $('ccYes').onclick = async () => { sfx('tap'); $('vcAsk').innerHTML = ''; try { camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }); $('vcCam').srcObject = camStream; await $('vcCam').play().catch(() => {}); } catch (e) { v.classList.add('nocam'); } runCall(); };
+  $('ccNo').onclick = () => { sfx('tap'); $('vcAsk').innerHTML = ''; v.classList.add('nocam'); runCall(); };
+}
+function speakName() { try { const u = new SpeechSynthesisUtterance(NAME() + '…'); u.lang = 'tr-TR'; u.pitch = 0.1; u.rate = 0.6; u.volume = 1; speechSynthesis.speak(u); } catch (e) {} }
+async function runCall() {
+  const v = $('vcall'), fig = $('vcFig'), cap = $('vcCap'), pip = $('vcPip'), n = esc(NAME());
+  let s = 0; const tick = setInterval(() => { s++; $('vcT').textContent = `00:${String(s).padStart(2, '0')}`; }, 1000);
+  ambience('static'); cap.textContent = 'Bağlanıyor…'; await sleep(1800); stopAmbience();
+  cap.textContent = ''; await sleep(1200);
+  speakName(); cap.innerHTML = `"${n}…"`; await sleep(2600); cap.textContent = '';
+  fig.classList.add('rise'); sfx('heart'); await sleep(4200);
+  cap.innerHTML = '<span class="red">Arkanda.</span>'; sfx('sting'); vib([300]); await sleep(2400); cap.textContent = '';
+  pip.src = 'media/v_figur2.mp4'; pip.currentTime = 0; pip.muted = false; pip.parentElement.classList.add('on');
+  await new Promise(res => { pip.onended = res; pip.onerror = res; pip.play().catch(() => setTimeout(res, 6000)); });
+  await playAudio('media/audio/ses_adimi.mp3', ['"Adımı… biliyor musun?"'], cap);
+  let tries = 3, ok = false;
+  while (tries > 0) {
+    $('vcAsk').innerHTML = `<div class="ask"><input id="vcIn" placeholder="Onun adı…" autocomplete="off" autocapitalize="words"><button class="t-btn" id="vcGo">SÖYLE</button><small>${tries} hakkın var</small></div>`;
+    const ans = await new Promise(res => { $('vcGo').onclick = () => res($('vcIn').value); $('vcIn').onkeydown = (e) => { if (e.key === 'Enter') res($('vcIn').value); }; });
+    $('vcAsk').innerHTML = '';
+    const a = ans.toLocaleLowerCase('tr').replace(/[^a-zçğıöşü]/g, '');
+    if (a.includes('yusuf')) { ok = true; break; }
+    tries--; sfx('error');
+    if (tries > 0) { cap.innerHTML = '<span class="red">Yanlış.</span>'; fig.classList.add('near'); await jumpScare(); cap.textContent = ''; }
+  }
+  if (ok) {
+    sfx('sting'); vib([100, 50, 300]); fig.classList.add('flash');
+    await playAudio('media/audio/ses_yusuf.mp3', ['"Yusuf…"', '"Seksen beş yıldır kimse adımı söylemedi…"'], cap);
+    fig.classList.remove('rise', 'near', 'flash'); fig.classList.add('fade'); sfx('static'); await sleep(2500);
+  } else {
+    cap.innerHTML = '<span class="red">"Sen de olursun."</span>'; await playAudio('media/audio/ses_sen_de.mp3', null, null); await jumpScare();
+  }
+  clearInterval(tick); stopCam(); pip.pause(); pip.parentElement.classList.remove('on'); fig.className = ''; v.classList.remove('on'); cap.textContent = '';
+  store.set('stage', ok ? 'ch3done' : 'ch3');
+  await sleep(1000); endCard(ok ? 'X3good' : 'X3bad');
+}
+Object.assign(ENDS, {
+  X3good: () => ({ ch: 'BÖLÜM 3 · SENİN TELEFONUN', title: 'YUSUF', next: 'Bölüm 4', soon: 'Yakında', btn: 'TELEFONA DÖN',
+    text: 'Kayıtlarda adı olmayan sekizinci madenci.<br>1941 yazında Karagöl\'e geldi; kimse adını deftere yazmadı.<br>Göçükte kaldığında kimse onu aramadı.<br>85 yıl sonra biri adını söyledi.<br><br><span style="color:#8a1c1c">Telefonun sustu. Şimdilik.</span>' }),
+  X3bad: () => ({ ch: 'BÖLÜM 3 · KÖTÜ SON', title: 'SEN DE', next: 'Adını bulamadın', soon: 'İpucu: fotoğraftakiler ile zabıttakileri karşılaştır', btn: 'TEKRAR DENE',
+    text: `Ertesi sabah telefonunun kilit ekranında yeni bir yazı vardı:<br><br><span style="color:#8a1c1c">"${esc(NAME())} — kayıtlarda yok."</span>` }),
+});
+const CH3_PAGES = {
+  'Mesajlar': () => {
+    sheet('Mesajlar', `<button class="row-btn" id="m3D">${row('<b>Deniz</b><br><span class="mut">' + (DZ.msgs.length ? 'Sohbete dön' : esc(NAME()) + '? Sen misin?') + '</span>', 'şimdi')}</button>
+      ${store.get('c3ece', false) ? `<button class="row-btn" id="m3E">${row('<b>Ece 🌻</b><br><span class="mut">Adını bulduysan söyle ona!</span>', 'şimdi')}</button>` : ''}
+      ${row('<b class="red">Bilinmeyen Numara</b><br><span class="mut">Merhaba ' + esc(NAME()) + '.</span>', 'bugün')}${row('<b>Annem</b><br><span class="mut">Kızım neredesin? Bir ses ver ne olur…</span>', '5 gün')}`);
+    $('m3D').onclick = () => { sfx('tap'); if (DZ.running) DZ.render(); else runDeniz(); };
+    if ($('m3E')) $('m3E').onclick = () => { sfx('tap'); ECEC.render(); };
+  },
+  'E-posta': () => {
+    if (!store.get('c3mail', false)) return APP_PAGES['E-posta']();
+    sheet('E-posta', `<button class="row-btn" id="e3">${row('<b>Ece Yılmaz</b><br><span class="mut">İLET: Karagöl 1941 — kaza zabtı · 2 ek</span>', 'şimdi')}</button>${row('<b>Kültür Arşivi</b><br><span class="mut">RE: 1941 Karagöl maden kazası kayıtları</span>', '3 Kas')}`);
+    $('e3').onclick = () => { sfx('tap'); openArchive(); };
+  },
+};
+
+window.__kt = { startCh3, reboot, runDeniz, videoCall, DZ, startCh2, dedeCall, enterMine, finalChoice, MN, S, unlock, incomingCall, jumpScare, view, openApp, playFootage, endCard, startCh1, store, CLIPS, finale };
