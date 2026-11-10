@@ -806,11 +806,46 @@ async function enterMine() {
   store.set('c2door', true);
   finalChoice();
 }
+function holdBtns(list) {
+  const box = $('mnBtns'); box.innerHTML = ''; box.classList.add('holds'); $('mnCap').style.bottom = 'calc(275px + env(safe-area-inset-bottom))';
+  return new Promise(res => list.forEach(([ic, label, val]) => {
+    const b = document.createElement('button'); b.className = 'hold';
+    b.innerHTML = `<i></i><span class="hi">${ic}</span><span class="hl">${label}</span><small>basılı tut</small>`;
+    let t0 = 0, raf = 0, done = false;
+    const step = () => { const p = Math.min(1, (performance.now() - t0) / 1500); b.style.setProperty('--p', (p * 100) + '%'); if (Math.random() < 0.25) vib(8); if (p >= 1) { done = true; box.classList.remove('holds'); box.innerHTML = ''; sfx('unlock'); vib([60, 40, 120]); res(val); return; } raf = requestAnimationFrame(step); };
+    const start = (e) => { e.preventDefault(); if (done) return; t0 = performance.now(); sfx('key'); raf = requestAnimationFrame(step); };
+    const stop = () => { if (done) return; cancelAnimationFrame(raf); b.style.setProperty('--p', '0%'); };
+    b.addEventListener('pointerdown', start); b.addEventListener('pointerup', stop); b.addEventListener('pointerleave', stop); b.addEventListener('pointercancel', stop);
+    b.oncontextmenu = (e) => e.preventDefault();
+    box.appendChild(b);
+  }));
+}
+const WHISPERS = ['…Hasan?', '…yedi…', '…bizi bırakma…', '…geri ver…', '…sen de olursun…', '…üşüyoruz…', '…Deniz burada…', '…açık bırak…'];
 async function finalChoice() {
-  mine(true); stopAmbience(); ambience('room');
-  mnBg('kapiIc'); $('mnBg').classList.remove('drift'); $('mnDark').style.opacity = 0.1; mnTop('317');
-  $('mnCap').innerHTML = 'Kapı aralık. İçeride beş kişi sırtları dönük bekliyor.<br><span class="red">Telefon elinde titriyor.</span>';
-  const c = await mnBtns([['📱 Telefonu eşiğe bırak', 'A'], ['🚪 Kapıyı kapat', 'B'], ['🔓 Kapıyı aç', 'C']]);
+  mine(true); stopAmbience(); ambience('static');
+  if (S.bat < 14 || S.bat > 30) S.bat = 15;
+  mnBg('kapiIc'); const bg = $('mnBg'); bg.classList.remove('drift'); bg.classList.remove('push'); void bg.offsetWidth; bg.classList.add('push');
+  $('mnDark').style.opacity = 0.6; mnTop('317'); $('mnWh').textContent = ''; $('mnBtns').innerHTML = '';
+  $('mnCap').textContent = 'Kapı aralık.'; await sleep(1400); $('mnDark').style.opacity = 0.15;
+  $('mnCap').textContent = 'İçeride beş kişi, sırtları sana dönük… bekliyor.'; await sleep(2200);
+  $('mnCap').textContent = '';
+  await playAudio('media/audio/ses_geri_koy.mp3', ['…geri koy onu…', '…bulduğun yere…', '…geri koy.'], $('mnWh'));
+  $('mnCap').innerHTML = '<span class="red">Karar ver. Pil bitmeden.</span>';
+  let drained = false, wi = 0, alive = true;
+  const zero = new Promise(res => {
+    const tick = () => {
+      if (!alive) return;
+      S.bat = Math.max(0, S.bat - 1); clock(); mnTop('317'); sfx('heart');
+      if (S.bat <= 5) { vib([80]); $('mnBat').classList.add('low'); }
+      if (S.bat <= 0) { drained = true; return res('C'); }
+      setTimeout(tick, S.bat <= 5 ? 900 : 1700);
+    };
+    setTimeout(tick, 1700);
+  });
+  const whIv = setInterval(() => { if (!alive) return; const w = $('mnWh'); w.classList.remove('show'); void w.offsetWidth; w.textContent = WHISPERS[wi++ % WHISPERS.length]; w.classList.add('show'); if (Math.random() < 0.5) flicker(3); }, 3600);
+  const c = await Promise.race([holdBtns([['📱', 'Telefonu eşiğe bırak', 'A'], ['🚪', 'Kapıyı kapat', 'B'], ['🔓', 'Kapıyı aç', 'C']]), zero]);
+  alive = false; clearInterval(whIv); $('mnCap').style.bottom = ''; $('mnBtns').innerHTML = ''; $('mnBtns').classList.remove('holds'); $('mnWh').textContent = ''; $('mnBat').classList.remove('low');
+  if (drained) { $('mnDark').style.opacity = 1; stopAmbience(); $('mnCap').textContent = 'Pil bitti. Ekran karardı.'; await sleep(2200); $('mnCap').textContent = 'Karanlıkta soğuk bir el, telefonu elinden aldı.'; await sleep(2600); }
   const e = store.get('endings', []); if (!e.includes(c)) { e.push(c); store.set('endings', e); }
   store.set('stage', 'ch2done');
   if (c === 'A') {

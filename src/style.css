@@ -280,3 +280,15 @@ video::-webkit-media-controls,video::-webkit-media-controls-start-playback-butto
 @keyframes fl{to{opacity:0}}
 #callx{position:absolute;inset:0;z-index:34;display:none;background:#000}
 #callx.on{display:block}
+
+.mn-bg.push{animation:push 30s linear forwards}
+@keyframes push{from{scale:1}to{scale:1.18}}
+.mn-wh{position:absolute;left:20px;right:20px;top:42%;text-align:center;font-style:italic;font-size:17px;color:#c9a0a0;text-shadow:0 0 12px #000;opacity:.85}
+.mn-wh.show{animation:wh 3.4s ease-in-out forwards}
+@keyframes wh{0%{opacity:0;letter-spacing:6px;filter:blur(3px)}20%,70%{opacity:.9;letter-spacing:1px;filter:none}100%{opacity:0}}
+.mn-btns.holds{flex-direction:column;gap:10px}
+.hold{position:relative;overflow:hidden;display:flex!important;align-items:center;gap:14px;padding:16px 18px!important;border-radius:16px;border:1px solid rgba(255,255,255,.22)!important;background:rgba(8,8,10,.6)!important;letter-spacing:.3px!important;font-size:16px!important;text-align:left;-webkit-user-select:none;user-select:none;touch-action:none}
+.hold i{position:absolute;left:0;top:0;bottom:0;width:var(--p,0%);background:linear-gradient(90deg,rgba(140,20,20,.25),rgba(220,40,40,.55));pointer-events:none}
+.hold .hi{position:relative;font-size:20px}.hold .hl{position:relative;flex:1}
+.hold small{position:relative;font-size:11px;color:#888;letter-spacing:1px}
+#mnBat.low{color:#ff453a;animation:blink 1s steps(2) infinite}
